@@ -39,15 +39,19 @@ class CubedSphere(object):
         self.proj_angle = proj_angle * np.pi / 180
         self.vert_angles = vert_angles * np.pi / 180
 
-        print(self.proj_angle)
-        print(self.vert_angles)
+        self.panels = list(map(lambda x: get_panel(latitude=x, longitude=self.proj_angle), self.vert_angles))
+
+        print(f"proj_angle: {self.proj_angle}")
+        print(f"vert_angle: {self.vert_angles}")
+        print(f"panels: {self.panels}")
 
 
 def main():
-    ds = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
+    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
     print(len(ds))
+    # need to use protected member to get this data, no getters
     for angle in ds._selected_angles.keys():
-        if angle == -170.0:
+        if angle == -40.0:
             CubedSphere(proj_angle=angle, vert_angles=ds._selected_angles[angle])
 
 
