@@ -1,3 +1,4 @@
+import torch
 from hrtfdata.torch.full import ARI
 from hrtfdata.torch import collate_dict_dataset
 from torch.utils.data import DataLoader
