@@ -11,7 +11,26 @@ def load_data(data_folder, load_function, domain, side):
                          feature_spec={"hrirs": {'side': side, 'domain': domain}},
                          target_spec={"side": {}},
                          group_spec={"subject": {}},
-                         subject_ids="first") # temporary measure to avoid loading entire dataset each time
+                         subject_ids="first")  # temporary measure to avoid loading entire dataset each time
+
+
+def get_panel(latitude, longitude):
+    # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
+    if -np.pi / 4 <= latitude <= np.pi/4:
+        if -np.pi / 4 <= longitude <= np.pi/4:
+            return 1
+        elif np.pi / 4 <= longitude <= 3*np.pi/4:
+            return 2
+        elif 3*np.pi / 4 <= longitude or longitude <= -3*np.pi/4:
+            return 3
+        elif -3*np.pi/4 <= longitude <= -np.pi/4:
+            return 4
+    # above a certain latitude, in panel 5
+    elif latitude > np.pi / 4:
+        return 5
+    # below a certain latitude, in panel 6
+    elif latitude < -np.pi/4:
+        return 6
 
 
 class CubedSphere(object):
