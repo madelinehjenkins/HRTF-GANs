@@ -17,21 +17,40 @@ def load_data(data_folder, load_function, domain, side):
 
 def get_panel(latitude, longitude):
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
-    if -np.pi / 4 <= latitude <= np.pi/4:
-        if -np.pi / 4 <= longitude <= np.pi/4:
+    if -np.pi / 4 <= latitude <= np.pi / 4:
+        if -np.pi / 4 <= longitude <= np.pi / 4:
             return 1
-        elif np.pi / 4 <= longitude <= 3*np.pi/4:
+        elif np.pi / 4 <= longitude <= 3 * np.pi / 4:
             return 2
-        elif 3*np.pi / 4 <= longitude or longitude <= -3*np.pi/4:
+        elif 3 * np.pi / 4 <= longitude or longitude <= -3 * np.pi / 4:
             return 3
-        elif -3*np.pi/4 <= longitude <= -np.pi/4:
+        elif -3 * np.pi / 4 <= longitude <= -np.pi / 4:
             return 4
     # above a certain latitude, in panel 5
     elif latitude > np.pi / 4:
         return 5
     # below a certain latitude, in panel 6
-    elif latitude < -np.pi/4:
+    elif latitude < -np.pi / 4:
         return 6
+
+
+def get_cube_coords(latitude, longitude):
+    panel = get_panel(latitude, longitude)
+    if panel is None:
+        # TODO: come up with a more sensible way of handling these
+        panel, x, y = np.nan, np.nan, np.nan
+    else:
+        if panel <= 4:
+            offset = (((panel - 1) / 2) * np.pi)
+            x = longitude - offset
+            y = np.arctan(np.tan(latitude) / np.cos(longitude - offset))
+        elif panel == 5:
+            x = np.arctan(np.sin(longitude) / np.tan(latitude))
+            y = np.arctan(-np.cos(longitude) / np.tan(latitude))
+        elif panel == 6:
+            x = np.arctan(-np.sin(longitude) / np.tan(latitude))
+            y = np.arctan(-np.cos(longitude) / np.tan(latitude))
+    return [panel, x, y]
 
 
 class CubedSphere(object):
@@ -40,11 +59,12 @@ class CubedSphere(object):
         self.proj_angle = proj_angle * np.pi / 180
         self.vert_angles = vert_angles * np.pi / 180
 
-        self.panels = list(map(lambda x: get_panel(latitude=x, longitude=self.proj_angle), self.vert_angles))
+        self.cube_coords = torch.tensor(list(map(lambda x: get_cube_coords(latitude=x, longitude=self.proj_angle), self.vert_angles)))
 
         print(f"proj_angle: {self.proj_angle}")
-        print(f"vert_angle: {self.vert_angles}")
-        print(f"panels: {self.panels}")
+        print(f"vert_angles shape: {self.vert_angles.shape}")
+        print(f"cube_coords: {self.cube_coords}")
+        print(f"cube_coords shape: {self.cube_coords.shape}")
 
 
 def main():
@@ -52,7 +72,7 @@ def main():
     print(len(ds))
     # need to use protected member to get this data, no getters
     for angle in ds._selected_angles.keys():
-        if angle == -40.0:
+        if angle == 0.0:
             CubedSphere(proj_angle=angle, vert_angles=ds._selected_angles[angle])
 
 
