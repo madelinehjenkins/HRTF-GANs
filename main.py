@@ -1,3 +1,5 @@
+import itertools
+
 import torch
 from hrtfdata.torch.full import ARI
 from hrtfdata.torch import collate_dict_dataset
@@ -19,6 +21,8 @@ def load_data(data_folder, load_function, domain, side):
 
 
 def get_panel(latitude, longitude):
+    if latitude is None or longitude is None:
+        return None
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
     if -np.pi / 4 <= latitude <= np.pi / 4:
         if -np.pi / 4 <= longitude <= np.pi / 4:
@@ -53,7 +57,7 @@ def get_cube_coords(latitude, longitude):
         elif panel == 6:
             x = np.arctan(-np.sin(longitude) / np.tan(latitude))
             y = np.arctan(-np.cos(longitude) / np.tan(latitude))
-    return [panel, x, y]
+    return panel, x, y
 
 
 def plot_sphere(measurement_positions):
