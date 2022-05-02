@@ -102,32 +102,40 @@ def convert_sphere_to_cartesian(coordinates):
             x.append(x_i)
             y.append(y_i)
             z.append(z_i)
+        else:
+            mask.append(False)
 
-    return np.asarray(x), np.asarray(y), np.asarray(z)
+    return np.asarray(x), np.asarray(y), np.asarray(z), mask
 
 
 def convert_cube_to_cartesian(coordinates):
     x, y, z = [], [], []
+    mask = []
 
     for panel, p, q in coordinates:
-        if panel == 1:
-            x_i, y_i, z_i = p, -np.pi / 4, q
-        if panel == 2:
-            x_i, y_i, z_i = np.pi / 4, p, q
-        if panel == 3:
-            x_i, y_i, z_i = p, np.pi / 4, q
-        if panel == 4:
-            x_i, y_i, z_i = -np.pi / 4, p, q
-        if panel == 5:
-            x_i, y_i, z_i = p, q, np.pi / 4
-        if panel == 6:
-            x_i, y_i, z_i = p, q, -np.pi / 4
+        if not np.isnan(p) and not np.isnan(q):
+            mask.append(True)
 
-        x.append(x_i)
-        y.append(y_i)
-        z.append(z_i)
+            if panel == 4:
+                x_i, y_i, z_i = p, -np.pi / 4, q
+            elif panel == 1:
+                x_i, y_i, z_i = np.pi / 4, p, q
+            elif panel == 2:
+                x_i, y_i, z_i = -p, np.pi / 4, q
+            elif panel == 3:
+                x_i, y_i, z_i = -np.pi / 4, -p, q
+            elif panel == 5:
+                x_i, y_i, z_i = -q, p, np.pi / 4
+            elif panel == 6:
+                x_i, y_i, z_i = q, p, -np.pi / 4
 
-    return np.asarray(x), np.asarray(y), np.asarray(z)
+            x.append(x_i)
+            y.append(y_i)
+            z.append(z_i)
+        else:
+            mask.append(False)
+
+    return np.asarray(x), np.asarray(y), np.asarray(z), mask
 
 
 class CubedSphere(object):
