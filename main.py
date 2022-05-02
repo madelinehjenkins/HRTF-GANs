@@ -162,18 +162,17 @@ def convert_cube_to_cartesian(coordinates):
     for panel, p, q in coordinates:
         if not np.isnan(p) and not np.isnan(q):
             mask.append(True)
-
-            if panel == 4:
-                x_i, y_i, z_i = p, -np.pi / 4, q
-            elif panel == 1:
+            if panel == 1:
                 x_i, y_i, z_i = np.pi / 4, p, q
             elif panel == 2:
                 x_i, y_i, z_i = -p, np.pi / 4, q
             elif panel == 3:
                 x_i, y_i, z_i = -np.pi / 4, -p, q
+            elif panel == 4:
+                x_i, y_i, z_i = p, -np.pi / 4, q
             elif panel == 5:
                 x_i, y_i, z_i = -q, p, np.pi / 4
-            elif panel == 6:
+            else:
                 x_i, y_i, z_i = q, p, -np.pi / 4
 
             x.append(x_i)
