@@ -106,10 +106,6 @@ class CubedSphere(object):
 
         # self.cube_coords is created from measurement_positions, such that order is the same
         self.cube_coords = list(itertools.starmap(get_cube_coords, self.sphere_coords))
-        print(f"measurement_positions: {self.sphere_coords[1500]}")
-        print(f"measurement_positions len: {len(self.sphere_coords)}")
-        print(f"cube_coords: {self.cube_coords[1500]}")
-        print(f"cube_coords shape: {len(self.cube_coords)}")
 
     def get_sphere_coords(self):
         return self.sphere_coords
