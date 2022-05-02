@@ -20,22 +20,31 @@ def load_data(data_folder, load_function, domain, side):
                          subject_ids="first")  # temporary measure to avoid loading entire dataset each time
 
 
+def get_offset(quadrant):
+    return ((quadrant - 1) / 2) * np.pi
+
+
 def get_panel(elevation, azimuth):
+    # use the azimuth to determine the quadrant of the sphere
+    if azimuth < np.pi / 4:
+        quadrant = 1
+    elif azimuth < 3 * np.pi / 4:
+        quadrant = 2
+    elif azimuth < 5 * np.pi / 4:
+        quadrant = 3
+    else:
+        quadrant = 4
+
+    offset = get_offset(quadrant)
+    threshold_val = np.tan(elevation) / np.cos(azimuth - offset)
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
-    if -np.pi / 4 <= elevation < np.pi / 4:
-        if -np.pi / 4 <= azimuth < np.pi / 4:
-            return 1
-        elif np.pi / 4 <= azimuth < 3 * np.pi / 4:
-            return 2
-        elif 3 * np.pi / 4 <= azimuth < 5 * np.pi / 4:
-            return 3
-        elif 5 * np.pi / 4 <= azimuth:
-            return 4
+    if -1 <= threshold_val < 1:
+        return quadrant
     # above a certain elevation, in panel 5
-    elif elevation >= np.pi / 4:
+    elif threshold_val >= 1:
         return 5
     # below a certain elevation, in panel 6
-    elif elevation < -np.pi / 4:
+    elif threshold_val < -1:
         return 6
 
 
@@ -50,7 +59,7 @@ def get_cube_coords(elevation, azimuth):
         panel = get_panel(elevation, azimuth)
 
         if panel <= 4:
-            offset = (((panel - 1) / 2) * np.pi)
+            offset = get_offset(panel)
             x = azimuth - offset
             y = np.arctan(np.tan(elevation) / np.cos(azimuth - offset))
         elif panel == 5:
@@ -124,12 +133,6 @@ def make_flat_cube_plot(cube_coords, shading=None):
     # Plot the surface.
     ax.scatter(x, y, c=shading, cmap=cm.coolwarm,
                linewidth=0, antialiased=False)
-
-    # # Customize the z axis.
-    # ax.set_zlim(-1.01, 1.01)
-    # ax.zaxis.set_major_locator(LinearLocator(10))
-    # # A StrMethodFormatter is used automatically
-    # ax.zaxis.set_major_formatter('{x:.02f}')
 
     plt.show()
 
