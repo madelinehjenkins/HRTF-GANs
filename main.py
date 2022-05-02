@@ -87,6 +87,53 @@ def make_3d_plot(shape, coordinates, shading=None):
     plt.show()
 
 
+def make_flat_cube_plot(cube_coords, shading=None):
+    fig, ax = plt.subplots()
+
+    # Format data.
+    x, y = [], []
+    mask = []
+
+    for panel, p, q in cube_coords:
+        if not np.isnan(p) and not np.isnan(q):
+            mask.append(True)
+
+            if panel == 1:
+                x_i, y_i = p, q
+            elif panel == 2:
+                x_i, y_i = p + np.pi / 2, q
+            elif panel == 3:
+                x_i, y_i = p + np.pi, q
+            elif panel == 4:
+                x_i, y_i = p - np.pi / 2, q
+            elif panel == 5:
+                x_i, y_i = p, q + np.pi / 2
+            else:
+                x_i, y_i = p, q - np.pi / 2
+
+            x.append(x_i)
+            y.append(y_i)
+        else:
+            mask.append(False)
+
+    x, y = np.asarray(x), np.asarray(y)
+
+    if shading is not None:
+        shading = list(itertools.compress(shading, mask))
+
+    # Plot the surface.
+    ax.scatter(x, y, c=shading, cmap=cm.coolwarm,
+               linewidth=0, antialiased=False)
+
+    # # Customize the z axis.
+    # ax.set_zlim(-1.01, 1.01)
+    # ax.zaxis.set_major_locator(LinearLocator(10))
+    # # A StrMethodFormatter is used automatically
+    # ax.zaxis.set_major_formatter('{x:.02f}')
+
+    plt.show()
+
+
 def convert_sphere_to_cartesian(coordinates):
     x, y, z = [], [], []
     mask = []
@@ -174,8 +221,10 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()["azimuth"])
-    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()["azimuth"])
+    shading_feature = "azimuth"
+    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
+    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
 
 
 if __name__ == '__main__':
