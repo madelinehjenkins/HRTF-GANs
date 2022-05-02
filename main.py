@@ -60,27 +60,22 @@ def get_cube_coords(latitude, longitude):
     return panel, x, y
 
 
-def plot_sphere(measurement_positions):
+def plot_sphere(sphere_coords):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Format data.
     x, y, z = [], [], []
 
-    for proj_angle in measurement_positions.keys():
-        vert_angles = measurement_positions[proj_angle].compressed()
+    for latitude, longitude in sphere_coords:
+        if latitude is not None and longitude is not None:
+            # convert to cartesian coordinates
+            x_i = np.cos(latitude) * np.cos(longitude)
+            y_i = np.cos(latitude) * np.sin(longitude)
+            z_i = np.sin(latitude)
 
-        # convert from degrees to radians
-        proj_angle = proj_angle * np.pi / 180
-        vert_angles = vert_angles * np.pi / 180
-
-        # convert to cartesian coordinates
-        x_i = np.cos(vert_angles) * np.cos(proj_angle)
-        y_i = np.cos(vert_angles) * np.sin(proj_angle)
-        z_i = np.sin(vert_angles)
-
-        x += x_i.tolist()
-        y += y_i.tolist()
-        z += z_i.tolist()
+            x.append(x_i)
+            y.append(y_i)
+            z.append(z_i)
 
     x, y, z = np.asarray(x), np.asarray(y), np.asarray(z)
 
