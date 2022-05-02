@@ -62,17 +62,20 @@ def get_cube_coords(elevation, azimuth):
     return panel, x, y
 
 
-def make_3d_plot(shape, coordinates):
+def make_3d_plot(shape, coordinates, shading=None):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Format data.
     if shape == "sphere":
-        x, y, z = convert_sphere_to_cartesian(coordinates)
+        x, y, z, mask = convert_sphere_to_cartesian(coordinates)
     elif shape == "cube":
-        x, y, z = convert_cube_to_cartesian(coordinates)
+        x, y, z, mask = convert_cube_to_cartesian(coordinates)
+
+    if shading is not None:
+        shading = list(itertools.compress(shading, mask))
 
     # Plot the surface.
-    ax.scatter(x, y, z, cmap=cm.coolwarm,
+    ax.scatter(x, y, z, c=shading, cmap=cm.coolwarm,
                linewidth=0, antialiased=False)
 
     # Customize the z axis.
@@ -86,9 +89,11 @@ def make_3d_plot(shape, coordinates):
 
 def convert_sphere_to_cartesian(coordinates):
     x, y, z = [], [], []
+    mask = []
 
     for elevation, azimuth in coordinates:
         if elevation is not None and azimuth is not None:
+            mask.append(True)
             # convert to cartesian coordinates
             x_i = np.cos(elevation) * np.cos(azimuth)
             y_i = np.cos(elevation) * np.sin(azimuth)
@@ -161,8 +166,8 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    make_3d_plot("sphere", cs.get_sphere_coords())
-    make_3d_plot("cube", cs.get_cube_coords())
+    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()["azimuth"])
+    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()["azimuth"])
 
 
 if __name__ == '__main__':
