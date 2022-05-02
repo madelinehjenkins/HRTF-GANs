@@ -1,5 +1,5 @@
 import itertools
-
+import pandas as pd
 import torch
 from hrtfdata.torch.full import ARI
 from hrtfdata.torch import collate_dict_dataset
@@ -21,20 +21,18 @@ def load_data(data_folder, load_function, domain, side):
 
 
 def get_panel(elevation, azimuth):
-    if elevation is None or azimuth is None:
-        return None
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
-    if -np.pi / 4 <= elevation <= np.pi / 4:
-        if -np.pi / 4 <= azimuth <= np.pi / 4:
+    if -np.pi / 4 <= elevation < np.pi / 4:
+        if -np.pi / 4 <= azimuth < np.pi / 4:
             return 1
-        elif np.pi / 4 <= azimuth <= 3 * np.pi / 4:
+        elif np.pi / 4 <= azimuth < 3 * np.pi / 4:
             return 2
-        elif 3 * np.pi / 4 <= azimuth or azimuth <= -3 * np.pi / 4:
+        elif 3 * np.pi / 4 <= azimuth < 5 * np.pi / 4:
             return 3
-        elif -3 * np.pi / 4 <= azimuth <= -np.pi / 4:
+        elif 5 * np.pi / 4 <= azimuth:
             return 4
     # above a certain elevation, in panel 5
-    elif elevation > np.pi / 4:
+    elif elevation >= np.pi / 4:
         return 5
     # below a certain elevation, in panel 6
     elif elevation < -np.pi / 4:
@@ -42,11 +40,15 @@ def get_panel(elevation, azimuth):
 
 
 def get_cube_coords(elevation, azimuth):
-    panel = get_panel(elevation, azimuth)
-    if panel is None:
-        # TODO: come up with a more sensible way of handling these
+    if elevation is None or azimuth is None:
+        # if this position was not measured in the sphere, keep as np.nan in cube
         panel, x, y = np.nan, np.nan, np.nan
     else:
+        # shift the range of azimuth angles such that it works with conversion equations
+        if azimuth < -np.pi / 4:
+            azimuth += 2 * np.pi
+        panel = get_panel(elevation, azimuth)
+
         if panel <= 4:
             offset = (((panel - 1) / 2) * np.pi)
             x = azimuth - offset
