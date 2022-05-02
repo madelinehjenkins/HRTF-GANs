@@ -78,9 +78,9 @@ def plot_sphere(measurement_positions):
         y_i = np.cos(vert_angles) * np.sin(proj_angle)
         z_i = np.sin(vert_angles)
 
-        x = x + x_i.tolist()
-        y = y + y_i.tolist()
-        z = z + z_i.tolist()
+        x += x_i.tolist()
+        y += y_i.tolist()
+        z += z_i.tolist()
 
     x, y, z = np.asarray(x), np.asarray(y), np.asarray(z)
 
