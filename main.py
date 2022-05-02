@@ -20,43 +20,43 @@ def load_data(data_folder, load_function, domain, side):
                          subject_ids="first")  # temporary measure to avoid loading entire dataset each time
 
 
-def get_panel(latitude, longitude):
-    if latitude is None or longitude is None:
+def get_panel(elevation, azimuth):
+    if elevation is None or azimuth is None:
         return None
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
-    if -np.pi / 4 <= latitude <= np.pi / 4:
-        if -np.pi / 4 <= longitude <= np.pi / 4:
+    if -np.pi / 4 <= elevation <= np.pi / 4:
+        if -np.pi / 4 <= azimuth <= np.pi / 4:
             return 1
-        elif np.pi / 4 <= longitude <= 3 * np.pi / 4:
+        elif np.pi / 4 <= azimuth <= 3 * np.pi / 4:
             return 2
-        elif 3 * np.pi / 4 <= longitude or longitude <= -3 * np.pi / 4:
+        elif 3 * np.pi / 4 <= azimuth or azimuth <= -3 * np.pi / 4:
             return 3
-        elif -3 * np.pi / 4 <= longitude <= -np.pi / 4:
+        elif -3 * np.pi / 4 <= azimuth <= -np.pi / 4:
             return 4
-    # above a certain latitude, in panel 5
-    elif latitude > np.pi / 4:
+    # above a certain elevation, in panel 5
+    elif elevation > np.pi / 4:
         return 5
-    # below a certain latitude, in panel 6
-    elif latitude < -np.pi / 4:
+    # below a certain elevation, in panel 6
+    elif elevation < -np.pi / 4:
         return 6
 
 
-def get_cube_coords(latitude, longitude):
-    panel = get_panel(latitude, longitude)
+def get_cube_coords(elevation, azimuth):
+    panel = get_panel(elevation, azimuth)
     if panel is None:
         # TODO: come up with a more sensible way of handling these
         panel, x, y = np.nan, np.nan, np.nan
     else:
         if panel <= 4:
             offset = (((panel - 1) / 2) * np.pi)
-            x = longitude - offset
-            y = np.arctan(np.tan(latitude) / np.cos(longitude - offset))
+            x = azimuth - offset
+            y = np.arctan(np.tan(elevation) / np.cos(azimuth - offset))
         elif panel == 5:
-            x = np.arctan(np.sin(longitude) / np.tan(latitude))
-            y = np.arctan(-np.cos(longitude) / np.tan(latitude))
+            x = np.arctan(np.sin(azimuth) / np.tan(elevation))
+            y = np.arctan(-np.cos(azimuth) / np.tan(elevation))
         elif panel == 6:
-            x = np.arctan(-np.sin(longitude) / np.tan(latitude))
-            y = np.arctan(-np.cos(longitude) / np.tan(latitude))
+            x = np.arctan(-np.sin(azimuth) / np.tan(elevation))
+            y = np.arctan(-np.cos(azimuth) / np.tan(elevation))
     return panel, x, y
 
 
@@ -66,12 +66,12 @@ def plot_sphere(sphere_coords):
     # Format data.
     x, y, z = [], [], []
 
-    for latitude, longitude in sphere_coords:
-        if latitude is not None and longitude is not None:
+    for elevation, azimuth in sphere_coords:
+        if elevation is not None and azimuth is not None:
             # convert to cartesian coordinates
-            x_i = np.cos(latitude) * np.cos(longitude)
-            y_i = np.cos(latitude) * np.sin(longitude)
-            z_i = np.sin(latitude)
+            x_i = np.cos(elevation) * np.cos(azimuth)
+            y_i = np.cos(elevation) * np.sin(azimuth)
+            z_i = np.sin(elevation)
 
             x.append(x_i)
             y.append(y_i)
@@ -101,7 +101,7 @@ class CubedSphere(object):
             proj_angle_i = proj_angle_i * np.pi / 180
 
             num_measurements = vert_angles_i.shape[0]
-            # measurement_positions is stored as (latitude, longitude)
+            # measurement_positions is stored as (elevation, azimuth)
             self.sphere_coords += list(zip(vert_angles_i.tolist(), [proj_angle_i] * num_measurements))
 
         # self.cube_coords is created from measurement_positions, such that order is the same
