@@ -62,13 +62,32 @@ def get_cube_coords(elevation, azimuth):
     return panel, x, y
 
 
-def plot_sphere(sphere_coords):
+def make_3d_plot(shape, coordinates):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Format data.
+    if shape == "sphere":
+        x, y, z = convert_sphere_to_cartesian(coordinates)
+    elif shape == "cube":
+        x, y, z = convert_cube_to_cartesian(coordinates)
+
+    # Plot the surface.
+    ax.scatter(x, y, z, cmap=cm.coolwarm,
+               linewidth=0, antialiased=False)
+
+    # Customize the z axis.
+    ax.set_zlim(-1.01, 1.01)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    # A StrMethodFormatter is used automatically
+    ax.zaxis.set_major_formatter('{x:.02f}')
+
+    plt.show()
+
+
+def convert_sphere_to_cartesian(coordinates):
     x, y, z = [], [], []
 
-    for elevation, azimuth in sphere_coords:
+    for elevation, azimuth in coordinates:
         if elevation is not None and azimuth is not None:
             # convert to cartesian coordinates
             x_i = np.cos(elevation) * np.cos(azimuth)
@@ -109,8 +128,19 @@ class CubedSphere(object):
         # self.cube_coords is created from measurement_positions, such that order is the same
         self.cube_coords = list(itertools.starmap(get_cube_coords, self.sphere_coords))
 
+        # create pandas dataframe containing all coordinate data (spherical and cubed sphere)
+        # this can be useful for debugging
+        self.all_coords = pd.concat([pd.DataFrame(self.sphere_coords, columns=["elevation", "azimuth"]),
+                                     pd.DataFrame(self.cube_coords, columns=["panel", "x", "y"])], axis="columns")
+
     def get_sphere_coords(self):
         return self.sphere_coords
+
+    def get_cube_coords(self):
+        return self.cube_coords
+
+    def get_all_coords(self):
+        return self.all_coords
 
 
 def main():
@@ -118,7 +148,9 @@ def main():
 
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
-    plot_sphere(cs.get_sphere_coords())
+
+    make_3d_plot("sphere", cs.get_sphere_coords())
+    make_3d_plot("cube", cs.get_cube_coords())
 
 
 if __name__ == '__main__':
