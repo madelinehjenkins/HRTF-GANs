@@ -98,29 +98,34 @@ def plot_sphere(measurement_positions):
 
 
 class CubedSphere(object):
-    def __init__(self, proj_angle, vert_angles):
-        # convert degrees to radians by multiplying by a factor of pi/180
-        self.proj_angle = proj_angle * np.pi / 180
-        self.vert_angles = vert_angles * np.pi / 180
+    def __init__(self, sphere_coords):
+        self.sphere_coords = []
+        for proj_angle_i in sphere_coords.keys():
+            # convert degrees to radians by multiplying by a factor of pi/180
+            vert_angles_i = sphere_coords[proj_angle_i] * np.pi / 180
+            proj_angle_i = proj_angle_i * np.pi / 180
 
-        self.cube_coords = torch.tensor(
-            list(map(lambda x: get_cube_coords(latitude=x, longitude=self.proj_angle), self.vert_angles)))
+            num_measurements = vert_angles_i.shape[0]
+            # measurement_positions is stored as (latitude, longitude)
+            self.sphere_coords += list(zip(vert_angles_i.tolist(), [proj_angle_i] * num_measurements))
 
-        print(f"proj_angle: {self.proj_angle}")
-        print(f"vert_angles shape: {self.vert_angles.shape}")
-        print(f"cube_coords: {self.cube_coords}")
-        print(f"cube_coords shape: {self.cube_coords.shape}")
+        # self.cube_coords is created from measurement_positions, such that order is the same
+        self.cube_coords = list(itertools.starmap(get_cube_coords, self.sphere_coords))
+        print(f"measurement_positions: {self.sphere_coords[1500]}")
+        print(f"measurement_positions len: {len(self.sphere_coords)}")
+        print(f"cube_coords: {self.cube_coords[1500]}")
+        print(f"cube_coords shape: {len(self.cube_coords)}")
+
+    def get_sphere_coords(self):
+        return self.sphere_coords
 
 
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
-    print(len(ds))
 
-    plot_sphere(ds._selected_angles)
     # need to use protected member to get this data, no getters
-    for angle in ds._selected_angles.keys():
-        if angle == 0.0:
-            CubedSphere(proj_angle=angle, vert_angles=ds._selected_angles[angle])
+    cs = CubedSphere(sphere_coords=ds._selected_angles)
+    plot_sphere(cs.get_sphere_coords())
 
 
 if __name__ == '__main__':
