@@ -56,14 +56,14 @@ def get_cube_coords(latitude, longitude):
     return [panel, x, y]
 
 
-def plot_sphere(all_angles):
+def plot_sphere(measurement_positions):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Format data.
     x, y, z = [], [], []
 
-    for proj_angle in all_angles.keys():
-        vert_angles = all_angles[proj_angle].compressed()
+    for proj_angle in measurement_positions.keys():
+        vert_angles = measurement_positions[proj_angle].compressed()
 
         # convert from degrees to radians
         proj_angle = proj_angle * np.pi / 180
