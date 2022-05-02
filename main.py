@@ -4,6 +4,9 @@ from hrtfdata.torch import collate_dict_dataset
 from torch.utils.data import DataLoader
 from pathlib import Path
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator
 
 
 def load_data(data_folder, load_function, domain, side):
@@ -53,13 +56,51 @@ def get_cube_coords(latitude, longitude):
     return [panel, x, y]
 
 
+def plot_sphere(all_angles):
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+    # Format data.
+    x, y, z = [], [], []
+
+    for proj_angle in all_angles.keys():
+        vert_angles = all_angles[proj_angle].compressed()
+
+        # convert from degrees to radians
+        proj_angle = proj_angle * np.pi / 180
+        vert_angles = vert_angles * np.pi / 180
+
+        # convert to cartesian coordinates
+        x_i = np.cos(vert_angles) * np.cos(proj_angle)
+        y_i = np.cos(vert_angles) * np.sin(proj_angle)
+        z_i = np.sin(vert_angles)
+
+        x = x + x_i.tolist()
+        y = y + y_i.tolist()
+        z = z + z_i.tolist()
+
+    x, y, z = np.asarray(x), np.asarray(y), np.asarray(z)
+
+    # Plot the surface.
+    surf = ax.scatter(x, y, z, cmap=cm.coolwarm,
+                      linewidth=0, antialiased=False)
+
+    # Customize the z axis.
+    ax.set_zlim(-1.01, 1.01)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    # A StrMethodFormatter is used automatically
+    ax.zaxis.set_major_formatter('{x:.02f}')
+
+    plt.show()
+
+
 class CubedSphere(object):
     def __init__(self, proj_angle, vert_angles):
         # convert degrees to radians by multiplying by a factor of pi/180
         self.proj_angle = proj_angle * np.pi / 180
         self.vert_angles = vert_angles * np.pi / 180
 
-        self.cube_coords = torch.tensor(list(map(lambda x: get_cube_coords(latitude=x, longitude=self.proj_angle), self.vert_angles)))
+        self.cube_coords = torch.tensor(
+            list(map(lambda x: get_cube_coords(latitude=x, longitude=self.proj_angle), self.vert_angles)))
 
         print(f"proj_angle: {self.proj_angle}")
         print(f"vert_angles shape: {self.vert_angles.shape}")
@@ -70,6 +111,8 @@ class CubedSphere(object):
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
     print(len(ds))
+
+    plot_sphere(ds._selected_angles)
     # need to use protected member to get this data, no getters
     for angle in ds._selected_angles.keys():
         if angle == 0.0:
