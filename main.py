@@ -98,19 +98,31 @@ def convert_sphere_to_cartesian(coordinates):
             y.append(y_i)
             z.append(z_i)
 
-    x, y, z = np.asarray(x), np.asarray(y), np.asarray(z)
+    return np.asarray(x), np.asarray(y), np.asarray(z)
 
-    # Plot the surface.
-    surf = ax.scatter(x, y, z, cmap=cm.coolwarm,
-                      linewidth=0, antialiased=False)
 
-    # Customize the z axis.
-    ax.set_zlim(-1.01, 1.01)
-    ax.zaxis.set_major_locator(LinearLocator(10))
-    # A StrMethodFormatter is used automatically
-    ax.zaxis.set_major_formatter('{x:.02f}')
+def convert_cube_to_cartesian(coordinates):
+    x, y, z = [], [], []
 
-    plt.show()
+    for panel, p, q in coordinates:
+        if panel == 1:
+            x_i, y_i, z_i = p, -np.pi / 4, q
+        if panel == 2:
+            x_i, y_i, z_i = np.pi / 4, p, q
+        if panel == 3:
+            x_i, y_i, z_i = p, np.pi / 4, q
+        if panel == 4:
+            x_i, y_i, z_i = -np.pi / 4, p, q
+        if panel == 5:
+            x_i, y_i, z_i = p, q, np.pi / 4
+        if panel == 6:
+            x_i, y_i, z_i = p, q, -np.pi / 4
+
+        x.append(x_i)
+        y.append(y_i)
+        z.append(z_i)
+
+    return np.asarray(x), np.asarray(y), np.asarray(z)
 
 
 class CubedSphere(object):
