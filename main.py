@@ -1,7 +1,7 @@
 import itertools
 import pandas as pd
 import torch
-from hrtfdata.torch.full import ARI
+from hrtfdata.torch.full import ARI, CHEDAR
 from hrtfdata.torch import collate_dict_dataset
 from torch.utils.data import DataLoader
 from pathlib import Path
@@ -84,7 +84,7 @@ def make_3d_plot(shape, coordinates, shading=None):
         shading = list(itertools.compress(shading, mask))
 
     # Plot the surface.
-    ax.scatter(x, y, z, c=shading, cmap=cm.coolwarm,
+    ax.scatter(x, y, z, c=shading, s=10,
                linewidth=0, antialiased=False)
 
     # Customize the z axis.
@@ -130,10 +130,23 @@ def make_flat_cube_plot(cube_coords, shading=None):
     if shading is not None:
         shading = list(itertools.compress(shading, mask))
 
+    # draw lines outlining cube
+    ax.hlines(y=-np.pi / 4, xmin=-3 * np.pi / 4, xmax=5 * np.pi / 4, linewidth=2, color="grey")
+    ax.hlines(y=np.pi / 4, xmin=-3 * np.pi / 4, xmax=5 * np.pi / 4, linewidth=2, color="grey")
+    ax.hlines(y=-3 * np.pi / 4, xmin=-np.pi / 4, xmax=np.pi / 4, linewidth=2, color="grey")
+    ax.hlines(y=3 * np.pi / 4, xmin=-np.pi / 4, xmax=np.pi / 4, linewidth=2, color="grey")
+
+    ax.vlines(x=-3 * np.pi / 4, ymin=-np.pi / 4, ymax=np.pi / 4, linewidth=2, color="grey")
+    ax.vlines(x=-np.pi / 4, ymin=-3 * np.pi / 4, ymax=3 * np.pi / 4, linewidth=2, color="grey")
+    ax.vlines(x=np.pi / 4, ymin=-3 * np.pi / 4, ymax=3 * np.pi / 4, linewidth=2, color="grey")
+    ax.vlines(x=3 * np.pi / 4, ymin=-np.pi / 4, ymax=np.pi / 4, linewidth=2, color="grey")
+    ax.vlines(x=5 * np.pi / 4, ymin=-np.pi / 4, ymax=np.pi / 4, linewidth=2, color="grey")
+
     # Plot the surface.
-    ax.scatter(x, y, c=shading, cmap=cm.coolwarm,
+    ax.scatter(x, y, c=shading, s=10,
                linewidth=0, antialiased=False)
 
+    fig.tight_layout()
     plt.show()
 
 
@@ -218,7 +231,8 @@ class CubedSphere(object):
 
 
 def main():
-    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
+    # ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
+    ds: CHEDAR = load_data(data_folder='CHEDAR', load_function=CHEDAR, domain='magnitude_db', side='left')
 
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
