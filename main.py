@@ -253,14 +253,6 @@ def main():
     make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
     make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
 
-    ds_ARI: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
-    # need to use protected member to get this data, no getters
-    cs_ARI = CubedSphere(sphere_coords=ds_ARI._selected_angles)
-
-    make_3d_plot("sphere", cs_ARI.get_sphere_coords(), shading=cs_ARI.get_all_coords()[shading_feature])
-    make_3d_plot("cube", cs_ARI.get_cube_coords(), shading=cs_ARI.get_all_coords()[shading_feature])
-    make_flat_cube_plot(cs_ARI.get_cube_coords(), shading=cs_ARI.get_all_coords()[shading_feature])
-
     make_flat_cube_plot(generate_euclidean_cube())
 
     # all_coords = cs.get_all_coords()
