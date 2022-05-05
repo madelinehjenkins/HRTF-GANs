@@ -131,16 +131,17 @@ def make_flat_cube_plot(cube_coords, shading=None):
         shading = list(itertools.compress(shading, mask))
 
     # draw lines outlining cube
-    ax.hlines(y=-np.pi / 4, xmin=-3 * np.pi / 4, xmax=5 * np.pi / 4, linewidth=2, color="grey")
-    ax.hlines(y=np.pi / 4, xmin=-3 * np.pi / 4, xmax=5 * np.pi / 4, linewidth=2, color="grey")
-    ax.hlines(y=-3 * np.pi / 4, xmin=-np.pi / 4, xmax=np.pi / 4, linewidth=2, color="grey")
-    ax.hlines(y=3 * np.pi / 4, xmin=-np.pi / 4, xmax=np.pi / 4, linewidth=2, color="grey")
+    b = np.pi/4
+    ax.hlines(y=-b, xmin=-3 * b, xmax=5 * b, linewidth=2, color="grey")
+    ax.hlines(y=b, xmin=-3 * b, xmax=5 * b, linewidth=2, color="grey")
+    ax.hlines(y=-3 * b, xmin=-b, xmax=b, linewidth=2, color="grey")
+    ax.hlines(y=3 * b, xmin=-b, xmax=b, linewidth=2, color="grey")
 
-    ax.vlines(x=-3 * np.pi / 4, ymin=-np.pi / 4, ymax=np.pi / 4, linewidth=2, color="grey")
-    ax.vlines(x=-np.pi / 4, ymin=-3 * np.pi / 4, ymax=3 * np.pi / 4, linewidth=2, color="grey")
-    ax.vlines(x=np.pi / 4, ymin=-3 * np.pi / 4, ymax=3 * np.pi / 4, linewidth=2, color="grey")
-    ax.vlines(x=3 * np.pi / 4, ymin=-np.pi / 4, ymax=np.pi / 4, linewidth=2, color="grey")
-    ax.vlines(x=5 * np.pi / 4, ymin=-np.pi / 4, ymax=np.pi / 4, linewidth=2, color="grey")
+    ax.vlines(x=-3 * b, ymin=-b, ymax=b, linewidth=2, color="grey")
+    ax.vlines(x=-b, ymin=-3 * b, ymax=3 * b, linewidth=2, color="grey")
+    ax.vlines(x=b, ymin=-3 * b, ymax=3 * b, linewidth=2, color="grey")
+    ax.vlines(x=3 * b, ymin=-b, ymax=b, linewidth=2, color="grey")
+    ax.vlines(x=5 * b, ymin=-b, ymax=b, linewidth=2, color="grey")
 
     # Plot the surface.
     ax.scatter(x, y, c=shading, s=10,
@@ -237,10 +238,15 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    shading_feature = "azimuth"
-    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
-    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-    make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    # shading_feature = "azimuth"
+    # make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
+    # make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    # make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+
+    all_coords = cs.get_all_coords()
+    print(f"all coords shape: {all_coords.shape}")
+    print(f"features shape: {ds[0]['features'].shape}")
+    print(f"subject 0, proj angle 0, vert angle 0, all HRTF frequencies: {ds[0]['features'][0][0]}")
 
 
 if __name__ == '__main__':
