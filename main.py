@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator
 
+PI_4 = np.pi / 4
+
 
 def load_data(data_folder, load_function, domain, side):
     base_dir = Path('/Users/madsjenkins/Imperial/HRTF/Volumes/home/HRTF Datasets')
@@ -131,17 +133,16 @@ def make_flat_cube_plot(cube_coords, shading=None):
         shading = list(itertools.compress(shading, mask))
 
     # draw lines outlining cube
-    b = np.pi/4
-    ax.hlines(y=-b, xmin=-3 * b, xmax=5 * b, linewidth=2, color="grey")
-    ax.hlines(y=b, xmin=-3 * b, xmax=5 * b, linewidth=2, color="grey")
-    ax.hlines(y=-3 * b, xmin=-b, xmax=b, linewidth=2, color="grey")
-    ax.hlines(y=3 * b, xmin=-b, xmax=b, linewidth=2, color="grey")
+    ax.hlines(y=-PI_4, xmin=-3 * PI_4, xmax=5 * PI_4, linewidth=2, color="grey")
+    ax.hlines(y=PI_4, xmin=-3 * PI_4, xmax=5 * PI_4, linewidth=2, color="grey")
+    ax.hlines(y=-3 * PI_4, xmin=-PI_4, xmax=PI_4, linewidth=2, color="grey")
+    ax.hlines(y=3 * PI_4, xmin=-PI_4, xmax=PI_4, linewidth=2, color="grey")
 
-    ax.vlines(x=-3 * b, ymin=-b, ymax=b, linewidth=2, color="grey")
-    ax.vlines(x=-b, ymin=-3 * b, ymax=3 * b, linewidth=2, color="grey")
-    ax.vlines(x=b, ymin=-3 * b, ymax=3 * b, linewidth=2, color="grey")
-    ax.vlines(x=3 * b, ymin=-b, ymax=b, linewidth=2, color="grey")
-    ax.vlines(x=5 * b, ymin=-b, ymax=b, linewidth=2, color="grey")
+    ax.vlines(x=-3 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
+    ax.vlines(x=-PI_4, ymin=-3 * PI_4, ymax=3 * PI_4, linewidth=2, color="grey")
+    ax.vlines(x=PI_4, ymin=-3 * PI_4, ymax=3 * PI_4, linewidth=2, color="grey")
+    ax.vlines(x=3 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
+    ax.vlines(x=5 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
 
     # Plot the surface.
     ax.scatter(x, y, c=shading, s=10,
@@ -180,17 +181,17 @@ def convert_cube_to_cartesian(coordinates):
         if not np.isnan(p) and not np.isnan(q):
             mask.append(True)
             if panel == 1:
-                x_i, y_i, z_i = np.pi / 4, p, q
+                x_i, y_i, z_i = PI_4, p, q
             elif panel == 2:
-                x_i, y_i, z_i = -p, np.pi / 4, q
+                x_i, y_i, z_i = -p, PI_4, q
             elif panel == 3:
-                x_i, y_i, z_i = -np.pi / 4, -p, q
+                x_i, y_i, z_i = -PI_4, -p, q
             elif panel == 4:
-                x_i, y_i, z_i = p, -np.pi / 4, q
+                x_i, y_i, z_i = p, -PI_4, q
             elif panel == 5:
-                x_i, y_i, z_i = -q, p, np.pi / 4
+                x_i, y_i, z_i = -q, p, PI_4
             else:
-                x_i, y_i, z_i = q, p, -np.pi / 4
+                x_i, y_i, z_i = q, p, -PI_4
 
             x.append(x_i)
             y.append(y_i)
