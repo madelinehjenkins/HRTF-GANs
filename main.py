@@ -248,15 +248,25 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    # shading_feature = "azimuth"
-    # make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
-    # make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-    # make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    shading_feature = "azimuth"
+    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
+    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
 
-    all_coords = cs.get_all_coords()
-    print(f"all coords shape: {all_coords.shape}")
-    print(f"features shape: {ds[0]['features'].shape}")
-    print(f"subject 0, proj angle 0, vert angle 0, all HRTF frequencies: {ds[0]['features'][0][0]}")
+    ds_ARI: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
+    # need to use protected member to get this data, no getters
+    cs_ARI = CubedSphere(sphere_coords=ds_ARI._selected_angles)
+
+    make_3d_plot("sphere", cs_ARI.get_sphere_coords(), shading=cs_ARI.get_all_coords()[shading_feature])
+    make_3d_plot("cube", cs_ARI.get_cube_coords(), shading=cs_ARI.get_all_coords()[shading_feature])
+    make_flat_cube_plot(cs_ARI.get_cube_coords(), shading=cs_ARI.get_all_coords()[shading_feature])
+
+    make_flat_cube_plot(generate_euclidean_cube())
+
+    # all_coords = cs.get_all_coords()
+    # print(f"all coords shape: {all_coords.shape}")
+    # print(f"features shape: {ds[0]['features'].shape}")
+    # print(f"subject 0, proj angle 0, vert angle 0, all HRTF frequencies: {ds[0]['features'][0][0]}")
 
 
 if __name__ == '__main__':
