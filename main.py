@@ -219,13 +219,15 @@ def convert_cube_to_cartesian(coordinates):
     return np.asarray(x), np.asarray(y), np.asarray(z), mask
 
 
-def generate_euclidean_cube(edge_len = 24):
-    coords = []
-    for panel in range(1, 7):
+def generate_euclidean_cube(edge_len=24):
+    cube_coords, sphere_coords = [], []
+    for panel in range(1, 6):
         for x in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
             for y in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
-                coords.append((panel, x + PI_4 / edge_len, y + PI_4 / edge_len))
-    return coords
+                x_i, y_i = x + PI_4 / edge_len, y + PI_4 / edge_len
+                cube_coords.append((panel, x_i, y_i))
+                sphere_coords.append(get_sphere_coords(panel, x_i, y_i))
+    return cube_coords, sphere_coords
 
 
 class CubedSphere(object):
