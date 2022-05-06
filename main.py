@@ -257,6 +257,19 @@ def get_three_closest(elevation, azimuth, sphere_coords):
     return sorted(distances, key=lambda x: x[2])[:3]
 
 
+def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
+    elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
+    azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]
+
+    # based on equation 5 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
+    denominator = (elev2-elev3)*(azi1-azi3) + (azi3-azi2)*(elev1-elev3)
+    alpha = ((elev2-elev3)*(azimuth-azi3) + (azi3-azi2)*(elevation-elev3)) / denominator
+    beta = ((elev3-elev1)*(azimuth-azi3) + (azi1-azi3)*(elevation-elev3)) / denominator
+    gamma = 1 - alpha - beta
+
+    return alpha, beta, gamma
+
+
 class CubedSphere(object):
     def __init__(self, sphere_coords):
         self.sphere_coords = []
@@ -296,7 +309,11 @@ def main():
     euclidean_cube, euclidean_sphere = generate_euclidean_cube()
 
     print(euclidean_sphere[0])
-    print(get_three_closest(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1], sphere_coords=cs.get_sphere_coords()))
+    three_closest = get_three_closest(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
+                            sphere_coords=cs.get_sphere_coords())
+    print(three_closest)
+    print(calculate_alpha_beta_gamma(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
+                                     closest_points=three_closest))
 
     # shading_feature = "azimuth"
     # make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
