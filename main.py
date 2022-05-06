@@ -272,7 +272,10 @@ def main():
     make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
     make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
 
-    make_flat_cube_plot(generate_euclidean_cube())
+    euclidean_cube, euclidean_sphere = generate_euclidean_cube()
+    make_flat_cube_plot(euclidean_cube)
+    make_3d_plot("cube", euclidean_cube)
+    make_3d_plot("sphere", euclidean_sphere)
 
     # all_coords = cs.get_all_coords()
     # print(f"all coords shape: {all_coords.shape}")
