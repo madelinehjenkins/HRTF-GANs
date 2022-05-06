@@ -50,6 +50,7 @@ def get_panel(elevation, azimuth):
         return 6
 
 
+# used for obtaining cubed sphere coordinates from a pair of spherical coordinates
 def get_cube_coords(elevation, azimuth):
     if elevation is None or azimuth is None:
         # if this position was not measured in the sphere, keep as np.nan in cube
@@ -71,6 +72,22 @@ def get_cube_coords(elevation, azimuth):
             x = np.arctan(-np.sin(azimuth) / np.tan(elevation))
             y = np.arctan(-np.cos(azimuth) / np.tan(elevation))
     return panel, x, y
+
+
+# used for obtaining spherical coordinates from cubed sphere coordinates
+def get_sphere_coords(panel, x, y):
+    if panel <= 4:
+        offset = get_offset(panel)
+        azimuth = x + offset
+        elevation = np.arctan(np.tan(y) * np.cos(x))
+    elif panel == 5:
+        azimuth = np.arctan(-np.tan(x) / np.tan(y))
+        elevation = np.arctan(np.sin(azimuth) / np.tan(x))
+        if elevation < 0:
+            elevation *= -1
+            azimuth += np.pi
+    # not including panel 6 for now, as it is being excluded from this data
+    return (elevation, azimuth)
 
 
 def make_3d_plot(shape, coordinates, shading=None):
