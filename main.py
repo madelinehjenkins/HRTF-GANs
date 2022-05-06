@@ -87,7 +87,7 @@ def get_sphere_coords(panel, x, y):
             elevation *= -1
             azimuth += np.pi
     # not including panel 6 for now, as it is being excluded from this data
-    return (elevation, azimuth)
+    return elevation, azimuth
 
 
 def make_3d_plot(shape, coordinates, shading=None):
@@ -230,6 +230,33 @@ def generate_euclidean_cube(edge_len=24):
     return cube_coords, sphere_coords
 
 
+def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
+    # adapted from CalculateDistance_HaversineFomrula in the 3DTune-In toolkit
+    # https://github.com/3DTune-In/3dti_AudioToolkit/blob/master/3dti_Toolkit/BinauralSpatializer/HRTF.cpp#L1052
+    increment_azimuth = azimuth1 - azimuth2
+    increment_elevation = elevation1 - elevation2
+    sin2_inc_elev = np.sin(increment_elevation / 2) ** 2
+    cos_elev1 = np.cos(elevation1)
+    cos_elev2 = np.cos(elevation2)
+    sin2_inc_azi = np.sin(increment_azimuth / 2) ** 2
+    raiz = sin2_inc_elev + (cos_elev1 * cos_elev2 * sin2_inc_azi)
+    sqrt_distance = raiz ** 0.5
+    distance = np.arcsin(sqrt_distance)
+    return distance
+
+
+def get_three_closest(elevation, azimuth, sphere_coords):
+    distances = []
+    for elev, azi in sphere_coords:
+        if elev is not None and azi is not None:
+            dist = calc_dist_haversine(elevation1=elevation, azimuth1=azimuth,
+                                       elevation2=elev, azimuth2=azi)
+            distances.append((elev, azi, dist))
+
+    # list of (elevation, azimuth, distance) for the 3 closest points
+    return sorted(distances, key=lambda x: x[2])[:3]
+
+
 class CubedSphere(object):
     def __init__(self, sphere_coords):
         self.sphere_coords = []
@@ -266,16 +293,19 @@ def main():
 
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
-
-    shading_feature = "azimuth"
-    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
-    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-    make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-
     euclidean_cube, euclidean_sphere = generate_euclidean_cube()
-    make_flat_cube_plot(euclidean_cube)
-    make_3d_plot("cube", euclidean_cube)
-    make_3d_plot("sphere", euclidean_sphere)
+
+    print(euclidean_sphere[0])
+    print(get_three_closest(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1], sphere_coords=cs.get_sphere_coords()))
+
+    # shading_feature = "azimuth"
+    # make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
+    # make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    # make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    #
+    # make_flat_cube_plot(euclidean_cube)
+    # make_3d_plot("cube", euclidean_cube)
+    # make_3d_plot("sphere", euclidean_sphere)
 
     # all_coords = cs.get_all_coords()
     # print(f"all coords shape: {all_coords.shape}")
