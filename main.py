@@ -245,6 +245,7 @@ def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
     return distance
 
 
+# get three closest measured point on sphere for barycentric interpolation
 def get_three_closest(elevation, azimuth, sphere_coords):
     distances = []
     for elev, azi in sphere_coords:
@@ -257,37 +258,55 @@ def get_three_closest(elevation, azimuth, sphere_coords):
     return sorted(distances, key=lambda x: x[2])[:3]
 
 
+# get alpha, beta, and gamma coeffs for barycentric interpolation
 def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
     elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
     azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]
 
     # based on equation 5 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
-    denominator = (elev2-elev3)*(azi1-azi3) + (azi3-azi2)*(elev1-elev3)
-    alpha = ((elev2-elev3)*(azimuth-azi3) + (azi3-azi2)*(elevation-elev3)) / denominator
-    beta = ((elev3-elev1)*(azimuth-azi3) + (azi1-azi3)*(elevation-elev3)) / denominator
+    denominator = (elev2 - elev3) * (azi1 - azi3) + (azi3 - azi2) * (elev1 - elev3)
+    alpha = ((elev2 - elev3) * (azimuth - azi3) + (azi3 - azi2) * (elevation - elev3)) / denominator
+    beta = ((elev3 - elev1) * (azimuth - azi3) + (azi1 - azi3) * (elevation - elev3)) / denominator
     gamma = 1 - alpha - beta
 
-    return alpha, beta, gamma
+    return {"alpha": alpha, "beta": beta, "gamma": gamma}
+
+
+def get_feature_for_point(elevation, azimuth, sphere_coords):
+    elev_index = sphere_coords.keys().index('elevation')
+    return 0
 
 
 class CubedSphere(object):
     def __init__(self, sphere_coords):
+        # initiate two lists of tuples, one will store (elevation, azimuth) for every measurement point
+        # the other will store (elevation_index, azimuth_index) for every measurement point
         self.sphere_coords = []
-        for proj_angle_i in sphere_coords.keys():
-            # convert degrees to radians by multiplying by a factor of pi/180
-            vert_angles_i = sphere_coords[proj_angle_i] * np.pi / 180
-            proj_angle_i = proj_angle_i * np.pi / 180
+        self.indices = []
 
-            num_measurements = vert_angles_i.shape[0]
-            # measurement_positions is stored as (elevation, azimuth)
-            self.sphere_coords += list(zip(vert_angles_i.tolist(), [proj_angle_i] * num_measurements))
+        # at this stage, we can simplify by acting as if there are the same number of elevation measurement points at
+        # every azimuth angle
+        num_elevation_measurements = sphere_coords[0].shape[0]
+        elevation_indices = list(range(num_elevation_measurements))
+
+        # loop through all azimuth positions
+        for azimuth_index, azimuth in enumerate(sphere_coords.keys()):
+            # convert degrees to radians by multiplying by a factor of pi/180
+            elevation = sphere_coords[azimuth] * np.pi / 180
+            azimuth = azimuth * np.pi / 180
+
+            # sphere_coords is stored as (elevation, azimuth). Ultimately, we're creating a list of (elevation,
+            # azimuth) pairs for every measurement position in the sphere
+            self.sphere_coords += list(zip(elevation.tolist(), [azimuth] * num_elevation_measurements))
+            self.indices += list(zip(elevation_indices, [azimuth_index] * num_elevation_measurements))
 
         # self.cube_coords is created from measurement_positions, such that order is the same
         self.cube_coords = list(itertools.starmap(get_cube_coords, self.sphere_coords))
 
         # create pandas dataframe containing all coordinate data (spherical and cubed sphere)
         # this can be useful for debugging
-        self.all_coords = pd.concat([pd.DataFrame(self.sphere_coords, columns=["elevation", "azimuth"]),
+        self.all_coords = pd.concat([pd.DataFrame(self.indices, columns=["elevation_index", "azimuth_index"]),
+                                     pd.DataFrame(self.sphere_coords, columns=["elevation", "azimuth"]),
                                      pd.DataFrame(self.cube_coords, columns=["panel", "x", "y"])], axis="columns")
 
     def get_sphere_coords(self):
@@ -310,10 +329,11 @@ def main():
 
     print(euclidean_sphere[0])
     three_closest = get_three_closest(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
-                            sphere_coords=cs.get_sphere_coords())
+                                      sphere_coords=cs.get_sphere_coords())
     print(three_closest)
-    print(calculate_alpha_beta_gamma(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
-                                     closest_points=three_closest))
+    barycentric_coeffs = calculate_alpha_beta_gamma(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
+                                                    closest_points=three_closest)
+    print(barycentric_coeffs)
 
     # shading_feature = "azimuth"
     # make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
