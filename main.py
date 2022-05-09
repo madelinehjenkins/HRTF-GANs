@@ -272,9 +272,25 @@ def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
     return {"alpha": alpha, "beta": beta, "gamma": gamma}
 
 
-def get_feature_for_point(elevation, azimuth, sphere_coords):
-    elev_index = sphere_coords.keys().index('elevation')
-    return 0
+def get_feature_for_point(elevation, azimuth, all_coords, subject_features):
+    all_coords_row = all_coords.query(f'elevation == {elevation} & azimuth == {azimuth}')
+    azimuth_index = int(all_coords_row.azimuth_index)
+    elevation_index = int(all_coords_row.elevation_index)
+    return subject_features[azimuth_index][elevation_index]
+
+
+def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
+    three_closest = get_three_closest(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+    coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=three_closest)
+
+    # TODO: this could be done more elegantly with map
+    features = []
+    for p in three_closest:
+        features.append(get_feature_for_point(p[0], p[1], all_coords, subject_features))
+    interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
+
+    # TODO: some testing to make sure this function is working properly
+    return interpolated_feature
 
 
 class CubedSphere(object):
