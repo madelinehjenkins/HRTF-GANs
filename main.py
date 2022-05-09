@@ -343,27 +343,20 @@ def main():
     cs = CubedSphere(sphere_coords=ds._selected_angles)
     euclidean_cube, euclidean_sphere = generate_euclidean_cube()
 
-    print(euclidean_sphere[0])
-    three_closest = get_three_closest(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
-                                      sphere_coords=cs.get_sphere_coords())
-    print(three_closest)
-    barycentric_coeffs = calculate_alpha_beta_gamma(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
-                                                    closest_points=three_closest)
-    print(barycentric_coeffs)
+    all_coords = cs.get_all_coords()
+    interpolated_features = calc_interpolated_feature(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
+                                                      sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
+                                                      subject_features=ds[0]['features'])
+    print(interpolated_features.shape)
 
-    # shading_feature = "azimuth"
-    # make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
-    # make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-    # make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-    #
-    # make_flat_cube_plot(euclidean_cube)
-    # make_3d_plot("cube", euclidean_cube)
-    # make_3d_plot("sphere", euclidean_sphere)
+    shading_feature = "azimuth"
+    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
+    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
 
-    # all_coords = cs.get_all_coords()
-    # print(f"all coords shape: {all_coords.shape}")
-    # print(f"features shape: {ds[0]['features'].shape}")
-    # print(f"subject 0, proj angle 0, vert angle 0, all HRTF frequencies: {ds[0]['features'][0][0]}")
+    make_flat_cube_plot(euclidean_cube)
+    make_3d_plot("cube", euclidean_cube)
+    make_3d_plot("sphere", euclidean_sphere)
 
 
 if __name__ == '__main__':
