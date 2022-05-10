@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator
+from collections import Counter
 
 PI_4 = np.pi / 4
 
@@ -268,18 +269,39 @@ def get_three_closest(elevation, azimuth, sphere_coords):
     # list of (elevation, azimuth, distance) for the 3 closest points
     return sorted(distances, key=lambda x: x[2])[:3]
 
-
+NUM_DENOM_0 = 0
+ELEVS = []
+NUM_ELEV_EQ = 0
+NUM_AZI_EQ = 0
+NUM_DENOM_TOTAL = 0
 # get alpha, beta, and gamma coeffs for barycentric interpolation
 def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
+    global NUM_DENOM_TOTAL
+    global NUM_DENOM_0
+    global NUM_ELEV_EQ
+    global ELEVS
+    global NUM_AZI_EQ
+    # not zero indexing var names in order to match equations in 3D Tune-In Toolkit paper
     elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
     azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]
 
     # based on equation 5 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
     denominator = (elev2 - elev3) * (azi1 - azi3) + (azi3 - azi2) * (elev1 - elev3)
-
+    NUM_DENOM_TOTAL += 1
     # TODO: how to handle denominator of zero?
     if denominator == 0:
         alpha, beta, gamma = 1. / 3, 1. / 3, 1. / 3
+        if azi1 == azi2 and azi2 == azi3:
+            # all azimuth equal
+            NUM_AZI_EQ += 1
+        elif elev1 == elev2 and elev2 == elev3:
+            # all elev equal
+            NUM_ELEV_EQ += 1
+            ELEVS.append(round(elev1, 2))
+        else:
+            print(f'elev, azi: {elevation}, {azimuth}')
+            print(closest_points)
+        NUM_DENOM_0 += 1
     else:
         alpha = ((elev2 - elev3) * (azimuth - azi3) + (azi3 - azi2) * (elevation - elev3)) / denominator
         beta = ((elev3 - elev1) * (azimuth - azi3) + (azi1 - azi3) * (elevation - elev3)) / denominator
@@ -364,29 +386,36 @@ def main():
     all_coords = cs.get_all_coords()
 
     magnitude_20 = []
+    min_elev = 0
     for p in cs.get_sphere_coords():
         if p[0] is not None:
             features_p = get_feature_for_point(p[0], p[1], all_coords, ds[0]['features'])
             magnitude_20.append(features_p[20])
+            if p[0] < min_elev:
+                min_elev = p[0]
         else:
             magnitude_20.append(None)
-
+    print(min_elev)
     make_3d_plot("sphere", cs.get_sphere_coords(), shading=magnitude_20)
     make_3d_plot("cube", cs.get_cube_coords(), shading=magnitude_20)
     make_flat_cube_plot(cs.get_cube_coords(), shading=magnitude_20)
 
     magnitude_20_euc = []
     for i, p in enumerate(euclidean_sphere):
-        if p[0]:
+        if p[0] is not None:
             features_p = calc_interpolated_feature(elevation=p[0], azimuth=p[1],
                                                    sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
                                                    subject_features=ds[0]['features'])
-            if features_p[20] > 0:
-                print(f'point index: {i}')
             magnitude_20_euc.append(features_p[20])
         else:
             magnitude_20_euc.append(None)
 
+    print(f'NUM_DENOM_0: {NUM_DENOM_0}')
+    print(f'AZI: {NUM_AZI_EQ}')
+    print(f'ELEV: {NUM_ELEV_EQ}')
+    print(f'ELEV_LOW: {Counter(ELEVS)}')
+    print(f'ELEV_LOW: {sorted(Counter(ELEVS))}')
+    print(f'NUM_DENOM_TOTAL: {NUM_DENOM_TOTAL}')
     make_flat_cube_plot(euclidean_cube, shading=magnitude_20_euc)
     make_3d_plot("cube", euclidean_cube, shading=magnitude_20_euc)
     make_3d_plot("sphere", euclidean_sphere, shading=magnitude_20_euc)
