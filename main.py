@@ -354,27 +354,42 @@ class CubedSphere(object):
 
 
 def main():
-    # ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
-    ds: CHEDAR = load_data(data_folder='CHEDAR', load_function=CHEDAR, domain='magnitude_db', side='left')
+    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
+    # ds: CHEDAR = load_data(data_folder='CHEDAR', load_function=CHEDAR, domain='magnitude_db', side='left')
 
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
     euclidean_cube, euclidean_sphere = generate_euclidean_cube()
 
     all_coords = cs.get_all_coords()
-    interpolated_features = calc_interpolated_feature(elevation=euclidean_sphere[0][0], azimuth=euclidean_sphere[0][1],
-                                                      sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
-                                                      subject_features=ds[0]['features'])
-    print(interpolated_features.shape)
 
-    shading_feature = "azimuth"
-    make_3d_plot("sphere", cs.get_sphere_coords(), shading=cs.get_all_coords()[shading_feature])
-    make_3d_plot("cube", cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
-    make_flat_cube_plot(cs.get_cube_coords(), shading=cs.get_all_coords()[shading_feature])
+    magnitude_20 = []
+    for p in cs.get_sphere_coords():
+        if p[0] is not None:
+            features_p = get_feature_for_point(p[0], p[1], all_coords, ds[0]['features'])
+            magnitude_20.append(features_p[20])
+        else:
+            magnitude_20.append(None)
 
-    make_flat_cube_plot(euclidean_cube)
-    make_3d_plot("cube", euclidean_cube)
-    make_3d_plot("sphere", euclidean_sphere)
+    make_3d_plot("sphere", cs.get_sphere_coords(), shading=magnitude_20)
+    make_3d_plot("cube", cs.get_cube_coords(), shading=magnitude_20)
+    make_flat_cube_plot(cs.get_cube_coords(), shading=magnitude_20)
+
+    magnitude_20_euc = []
+    for i, p in enumerate(euclidean_sphere):
+        if p[0]:
+            features_p = calc_interpolated_feature(elevation=p[0], azimuth=p[1],
+                                                   sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
+                                                   subject_features=ds[0]['features'])
+            if features_p[20] > 0:
+                print(f'point index: {i}')
+            magnitude_20_euc.append(features_p[20])
+        else:
+            magnitude_20_euc.append(None)
+
+    make_flat_cube_plot(euclidean_cube, shading=magnitude_20_euc)
+    make_3d_plot("cube", euclidean_cube, shading=magnitude_20_euc)
+    make_3d_plot("sphere", euclidean_sphere, shading=magnitude_20_euc)
 
 
 if __name__ == '__main__':
