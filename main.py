@@ -276,9 +276,14 @@ def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
 
     # based on equation 5 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
     denominator = (elev2 - elev3) * (azi1 - azi3) + (azi3 - azi2) * (elev1 - elev3)
-    alpha = ((elev2 - elev3) * (azimuth - azi3) + (azi3 - azi2) * (elevation - elev3)) / denominator
-    beta = ((elev3 - elev1) * (azimuth - azi3) + (azi1 - azi3) * (elevation - elev3)) / denominator
-    gamma = 1 - alpha - beta
+
+    # TODO: how to handle denominator of zero?
+    if denominator == 0:
+        alpha, beta, gamma = 1. / 3, 1. / 3, 1. / 3
+    else:
+        alpha = ((elev2 - elev3) * (azimuth - azi3) + (azi3 - azi2) * (elevation - elev3)) / denominator
+        beta = ((elev3 - elev1) * (azimuth - azi3) + (azi1 - azi3) * (elevation - elev3)) / denominator
+        gamma = 1 - alpha - beta
 
     return {"alpha": alpha, "beta": beta, "gamma": gamma}
 
@@ -302,6 +307,7 @@ def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, sub
 
     # based on equation 6 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
     interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
+
     return interpolated_feature
 
 
