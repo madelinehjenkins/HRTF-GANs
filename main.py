@@ -112,7 +112,7 @@ def make_3d_plot(shape, coordinates, shading=None):
         shading = list(itertools.compress(shading, mask))
 
     # Plot the surface.
-    ax.scatter(x, y, z, c=shading, s=10,
+    sc = ax.scatter(x, y, z, c=shading, s=10,
                linewidth=0, antialiased=False)
 
     # Customize the z axis.
@@ -120,6 +120,7 @@ def make_3d_plot(shape, coordinates, shading=None):
     ax.zaxis.set_major_locator(LinearLocator(10))
     # A StrMethodFormatter is used automatically
     ax.zaxis.set_major_formatter('{x:.02f}')
+    plt.colorbar(sc)
 
     plt.show()
 
@@ -171,8 +172,9 @@ def make_flat_cube_plot(cube_coords, shading=None):
     ax.vlines(x=5 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
 
     # Plot the surface.
-    ax.scatter(x, y, c=shading, s=10,
-               linewidth=0, antialiased=False)
+    sc = ax.scatter(x, y, c=shading, s=10,
+                    linewidth=0, antialiased=False)
+    plt.colorbar(sc)
 
     fig.tight_layout()
     plt.show()
