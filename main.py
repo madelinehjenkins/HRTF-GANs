@@ -87,6 +87,15 @@ def get_sphere_coords(panel, x, y):
             elevation *= -1
             azimuth += np.pi
     # not including panel 6 for now, as it is being excluded from this data
+    elif panel == 6:
+        pass
+
+    # ensure azimuth is in range -pi to +pi
+    while azimuth > np.pi:
+        azimuth -= 2 * np.pi
+    while azimuth <= -np.pi:
+        azimuth += 2 * np.pi
+
     return elevation, azimuth
 
 
