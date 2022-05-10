@@ -283,13 +283,14 @@ def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, sub
     three_closest = get_three_closest(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
     coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=three_closest)
 
-    # TODO: this could be done more elegantly with map
+    # get features for each of the three closest points, add to a list in order of closest to farthest
     features = []
     for p in three_closest:
-        features.append(get_feature_for_point(p[0], p[1], all_coords, subject_features))
-    interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
+        features_p = get_feature_for_point(p[0], p[1], all_coords, subject_features)
+        features.append(features_p)
 
-    # TODO: some testing to make sure this function is working properly
+    # based on equation 6 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
+    interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
     return interpolated_feature
 
 
