@@ -163,12 +163,11 @@ def make_flat_cube_plot(cube_coords, shading=None):
     # draw lines outlining cube
     ax.hlines(y=-PI_4, xmin=-3 * PI_4, xmax=5 * PI_4, linewidth=2, color="grey")
     ax.hlines(y=PI_4, xmin=-3 * PI_4, xmax=5 * PI_4, linewidth=2, color="grey")
-    ax.hlines(y=-3 * PI_4, xmin=-PI_4, xmax=PI_4, linewidth=2, color="grey")
     ax.hlines(y=3 * PI_4, xmin=-PI_4, xmax=PI_4, linewidth=2, color="grey")
 
     ax.vlines(x=-3 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
-    ax.vlines(x=-PI_4, ymin=-3 * PI_4, ymax=3 * PI_4, linewidth=2, color="grey")
-    ax.vlines(x=PI_4, ymin=-3 * PI_4, ymax=3 * PI_4, linewidth=2, color="grey")
+    ax.vlines(x=-PI_4, ymin=-PI_4, ymax=3 * PI_4, linewidth=2, color="grey")
+    ax.vlines(x=PI_4, ymin=-PI_4, ymax=3 * PI_4, linewidth=2, color="grey")
     ax.vlines(x=3 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
     ax.vlines(x=5 * PI_4, ymin=-PI_4, ymax=PI_4, linewidth=2, color="grey")
 
@@ -178,6 +177,7 @@ def make_flat_cube_plot(cube_coords, shading=None):
     plt.colorbar(sc)
 
     fig.tight_layout()
+    fig.set_size_inches(9, 4)
     plt.show()
 
 
