@@ -320,6 +320,30 @@ def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, sub
     return interpolated_feature
 
 
+def check_point_in_triangle(elevation, azimuth, triangle_coordinates):
+    # convert point of interest to cartesian coordinates and add to array
+    x, y, z, _ = convert_sphere_to_cartesian([[elevation, azimuth]])
+    point = np.array([x, y, z])
+    # convert triangle coordinates to cartesian and add to array
+    x_triangle, y_triangle, z_triangle, _ = convert_sphere_to_cartesian(triangle_coordinates)
+    triangle_points = np.array([x_triangle, y_triangle, z_triangle])
+
+    # check if matrix is singular
+    if np.linalg.matrix_rank(triangle_points) < 3:
+        return False
+
+    # solve system of equations
+    solution = np.linalg.solve(triangle_points, point)
+
+    # this checks that a point lies in a spherical triangle by checking that the vector formed from the center of the
+    # sphere to the point of interest intersects the plane formed by the triangle's vertices
+    # check that constraints are satisfied
+    solution_sum = np.sum(solution)
+    solution_lambda = 1. / solution_sum
+
+    return solution_lambda > 0 and np.all(solution > 0)
+
+
 def make_interpolated_plots(cs, features, feature_index):
     euclidean_cube, euclidean_sphere = generate_euclidean_cube()
     all_coords = cs.get_all_coords()
