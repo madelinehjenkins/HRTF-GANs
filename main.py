@@ -391,39 +391,34 @@ class CubedSphere(object):
 
 
 def main():
-    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='magnitude_db', side='left')
+    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
     # ds: CHEDAR = load_data(data_folder='CHEDAR', load_function=CHEDAR, domain='magnitude_db', side='left')
 
     # need to use protected member to get this data, no getters
-    cs = CubedSphere(sphere_coords=ds._selected_angles)
-    euclidean_cube, euclidean_sphere = generate_euclidean_cube()
+    # cs = CubedSphere(sphere_coords=ds._selected_angles)
+    # make_interpolated_plots(cs, ds[0]['features'], feature_index=20)
 
-    all_coords = cs.get_all_coords()
+    # print(f'Features shape: {ds[0]["features"].shape}')
+    # print(f'# of row angles, # of col angles: {len(ds.row_angles), len(ds.column_angles)}')
+    # print(f'HRIR sample rate: {ds.hrir_samplerate}')
+    # print(f'# of HRTF frequencies: {len(ds.hrtf_frequencies)}')
+    # print(ds[0]["features"][0][0])
 
-    magnitude_20 = []
-    for p in cs.get_sphere_coords():
-        if p[0] is not None:
-            features_p = get_feature_for_point(p[0], p[1], all_coords, ds[0]['features'])
-            magnitude_20.append(features_p[20])
-        else:
-            magnitude_20.append(None)
-    make_3d_plot("sphere", cs.get_sphere_coords(), shading=magnitude_20)
-    make_3d_plot("cube", cs.get_cube_coords(), shading=magnitude_20)
-    make_flat_cube_plot(cs.get_cube_coords(), shading=magnitude_20)
+    # values = ds[0]["features"][0][20]
+    for row in ds[0]["features"]:
+        for col in row:
+            values = max(range(len(col)), key=col.__getitem__)
+            if values > 75:
+                print(values)
+                plot_impulse_response(col)
+            if values == 37:
+                print(values)
+                plot_impulse_response(col)
+    # plot_impulse_response(ds[0]["features"][70][10])
 
-    magnitude_20_euc = []
-    for i, p in enumerate(euclidean_sphere):
-        if p[0] is not None:
-            features_p = calc_interpolated_feature(elevation=p[0], azimuth=p[1],
-                                                   sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
-                                                   subject_features=ds[0]['features'])
-            magnitude_20_euc.append(features_p[20])
-        else:
-            magnitude_20_euc.append(None)
-
-    make_flat_cube_plot(euclidean_cube, shading=magnitude_20_euc)
-    make_3d_plot("cube", euclidean_cube, shading=magnitude_20_euc)
-    make_3d_plot("sphere", euclidean_sphere, shading=magnitude_20_euc)
+    # print(triangle_area(0, 0, 2, 0, 1, 6, 1, 1))
+    # print(triangle_area(2, 0, -2, 2, 4, 2, 1, 1))
+    # print(triangle_area(2, 0, -2, 2, 1, 6, 1, 1))
 
 
 if __name__ == '__main__':
