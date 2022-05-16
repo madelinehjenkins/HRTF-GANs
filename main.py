@@ -298,7 +298,15 @@ def get_feature_for_point(elevation, azimuth, all_coords, subject_features):
 
 def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
     three_closest = get_three_closest(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+    check = check_point_in_triangle(elevation, azimuth, [three_closest[0][:2], three_closest[1][:2], three_closest[2][:2]])
+    # TODO: if check is false, look at next triangles
     coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=three_closest)
+
+    print(f'is point in triangle? {check}')
+    if not check and coeffs["alpha"] != 1./3:
+        print(f'three closest: {three_closest}')
+        print(f'point: {elevation,azimuth}')
+        print(f'coeffs: {coeffs}\n')
 
     # get features for each of the three closest points, add to a list in order of closest to farthest
     features = []
