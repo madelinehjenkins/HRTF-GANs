@@ -114,7 +114,7 @@ def make_3d_plot(shape, coordinates, shading=None):
 
     # Plot the surface.
     sc = ax.scatter(x, y, z, c=shading, s=10,
-               linewidth=0, antialiased=False)
+                    linewidth=0, antialiased=False)
 
     # Customize the z axis.
     ax.set_zlim(-1.01, 1.01)
