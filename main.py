@@ -257,8 +257,7 @@ def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
     return distance
 
 
-# get three closest measured point on sphere for barycentric interpolation
-def get_three_closest(elevation, azimuth, sphere_coords):
+def get_point_distances(elevation, azimuth, sphere_coords):
     distances = []
     for elev, azi in sphere_coords:
         if elev is not None and azi is not None:
@@ -266,8 +265,16 @@ def get_three_closest(elevation, azimuth, sphere_coords):
                                        elevation2=elev, azimuth2=azi)
             distances.append((elev, azi, dist))
 
+    # sorted list of (elevation, azimuth, distance) for all points
+    return sorted(distances, key=lambda x: x[2])
+
+
+# get three closest measured point on sphere for barycentric interpolation
+def get_three_closest(elevation, azimuth, sphere_coords):
+    distances = get_point_distances(elevation, azimuth, sphere_coords)
+
     # list of (elevation, azimuth, distance) for the 3 closest points
-    return sorted(distances, key=lambda x: x[2])[:3]
+    return distances[:3]
 
 
 # get alpha, beta, and gamma coeffs for barycentric interpolation
