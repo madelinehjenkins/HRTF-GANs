@@ -312,6 +312,42 @@ def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, sub
     return interpolated_feature
 
 
+def make_interpolated_plots(cs, features, feature_index):
+    euclidean_cube, euclidean_sphere = generate_euclidean_cube()
+    all_coords = cs.get_all_coords()
+
+    selected_feature_raw = []
+    for p in cs.get_sphere_coords():
+        if p[0] is not None:
+            features_p = get_feature_for_point(p[0], p[1], all_coords, features)
+            selected_feature_raw.append(features_p[feature_index])
+        else:
+            selected_feature_raw.append(None)
+
+    make_3d_plot("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
+    make_3d_plot("cube", cs.get_cube_coords(), shading=selected_feature_raw)
+    make_flat_cube_plot(cs.get_cube_coords(), shading=selected_feature_raw)
+
+    selected_feature_interpolated = []
+    for p in euclidean_sphere:
+        if p[0] is not None:
+            features_p = calc_interpolated_feature(elevation=p[0], azimuth=p[1],
+                                                   sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
+                                                   subject_features=features)
+            selected_feature_interpolated.append(features_p[feature_index])
+        else:
+            selected_feature_interpolated.append(None)
+
+    make_flat_cube_plot(euclidean_cube, shading=selected_feature_interpolated)
+    make_3d_plot("cube", euclidean_cube, shading=selected_feature_interpolated)
+    make_3d_plot("sphere", euclidean_sphere, shading=selected_feature_interpolated)
+
+
+def plot_impulse_response(times):
+    plt.plot(times)
+    plt.show()
+
+
 class CubedSphere(object):
     def __init__(self, sphere_coords):
         # initiate two lists of tuples, one will store (elevation, azimuth) for every measurement point
