@@ -332,21 +332,66 @@ def get_feature_for_point(elevation, azimuth, all_coords, subject_features):
     return subject_features[azimuth_index][elevation_index]
 
 
-def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
-    three_closest = get_three_closest(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
-    check = check_point_in_triangle(elevation, azimuth, [three_closest[0][:2], three_closest[1][:2], three_closest[2][:2]])
-    # TODO: if check is false, look at next triangles
-    coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=three_closest)
+# TODO: I believe this works but it runs very slowly -- how to improve?
+def get_possible_triangles(max_vertex_index, point_distances):
+    possible_triangles = []
+    for v0 in range(max_vertex_index - 1):
+        for v1 in range(v0 + 1, max_vertex_index):
+            for v2 in range(v1 + 1, max_vertex_index + 1):
+                total_dist = point_distances[v0][2] + point_distances[v1][2] + point_distances[v2][2]
+                possible_triangles.append((v0, v1, v2, total_dist))
 
-    print(f'is point in triangle? {check}')
-    if not check and coeffs["alpha"] != 1./3:
-        print(f'three closest: {three_closest}')
-        print(f'point: {elevation,azimuth}')
-        print(f'coeffs: {coeffs}\n')
+    return sorted(possible_triangles, key=lambda x: x[3])
+
+
+def get_triangle_vertices(elevation, azimuth, sphere_coords):
+    selected_triangle_vertices = None
+    # get distances from point of interest to every other point
+    point_distances = get_point_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+
+    # first try triangle formed by closest points
+    triangle_vertices = [point_distances[0][:2], point_distances[1][:2], point_distances[2][:2]]
+    if triangle_encloses_point(elevation, azimuth, triangle_vertices):
+        selected_triangle_vertices = triangle_vertices
+    else:
+        # failing that, examine all possible triangles
+        # possible triangles is sorted from shortest total distance to longest total distance
+        possible_triangles = get_possible_triangles(300, point_distances)
+        # TODO: including all vertices is more correct but runs very slowly
+        # possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        for v0, v1, v2, _ in possible_triangles:
+            triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
+            elevations_equal = triangle_vertices[0][0] == triangle_vertices[1][0] == triangle_vertices[2][0]
+
+            # for each triangle, check if it encloses the point
+            if not elevations_equal and triangle_encloses_point(elevation, azimuth, triangle_vertices):
+                selected_triangle_vertices = triangle_vertices
+                if v2 > 10:
+                    print(f'\nselected vertices for {round(elevation, 2), round(azimuth, 2)}: {v0, v1, v2}')
+                    print(elevation, azimuth)
+                    print(selected_triangle_vertices)
+                break
+
+    # if no triangles enclose the point, return none (hopefully this never happens)
+    if selected_triangle_vertices is None:
+        print('it happened')
+        print(f'elevation, azimuth: {round(elevation, 2), round(azimuth, 2)}')
+    return selected_triangle_vertices
+
+
+def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
+    # add poles to sphere_coords if poles not already contained
+    elevations = [x[0] for x in sphere_coords if x[0] is not None]
+    if max(elevations) != np.pi / 2:
+        sphere_coords.append((np.pi / 2, 0))
+    if min(elevations) != -np.pi / 2:
+        sphere_coords.append((-np.pi / 2, 0))
+    triangle_vertices = get_triangle_vertices(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+    coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=triangle_vertices)
 
     # get features for each of the three closest points, add to a list in order of closest to farthest
     features = []
-    for p in three_closest:
+    for p in triangle_vertices:
         features_p = get_feature_for_point(p[0], p[1], all_coords, subject_features)
         features.append(features_p)
 
