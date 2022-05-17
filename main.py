@@ -379,12 +379,6 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
 
 
 def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
-    # add poles to sphere_coords if poles not already contained
-    elevations = [x[0] for x in sphere_coords if x[0] is not None]
-    if max(elevations) != np.pi / 2:
-        sphere_coords.append((np.pi / 2, 0))
-    if min(elevations) != -np.pi / 2:
-        sphere_coords.append((-np.pi / 2, 0))
     triangle_vertices = get_triangle_vertices(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
     coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=triangle_vertices)
 
