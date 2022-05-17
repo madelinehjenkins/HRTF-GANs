@@ -253,8 +253,21 @@ def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
     sin2_inc_azi = np.sin(increment_azimuth / 2) ** 2
     raiz = sin2_inc_elev + (cos_elev1 * cos_elev2 * sin2_inc_azi)
     sqrt_distance = raiz ** 0.5
-    distance = np.arcsin(sqrt_distance)
+    distance = 2*np.arcsin(sqrt_distance)
     return distance
+
+
+def calc_spherical_excess(elevation1, azimuth1, elevation2, azimuth2, elevation3, azimuth3):
+    dist12 = calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2)
+    dist13 = calc_dist_haversine(elevation1, azimuth1, elevation3, azimuth3)
+    dist23 = calc_dist_haversine(elevation2, azimuth2, elevation3, azimuth3)
+    semiperim = 0.5 * (dist12 + dist13 + dist23)
+    inner = np.tan(0.5 * semiperim) * \
+            np.tan(0.5 * (semiperim - dist12)) * \
+            np.tan(0.5 * (semiperim - dist13)) * \
+            np.tan(0.5 * (semiperim - dist23))
+    excess = 4 * np.arctan(np.sqrt(inner))
+    return excess
 
 
 def get_point_distances(elevation, azimuth, sphere_coords):
