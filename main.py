@@ -290,8 +290,24 @@ def get_three_closest(elevation, azimuth, sphere_coords):
     return distances[:3]
 
 
-# get alpha, beta, and gamma coeffs for barycentric interpolation
+# get alpha, beta, and gamma coeffs for barycentric interpolation (modified for spherical triangle
 def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
+    # not zero indexing var names in order to match equations in 3D Tune-In Toolkit paper
+    elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
+    azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]
+
+    # modified calculations to suit spherical triangle
+    denominator = calc_spherical_excess(elev1, azi1, elev2, azi2, elev3, azi3)
+
+    alpha = calc_spherical_excess(elevation, azimuth, elev2, azi2, elev3, azi3) / denominator
+    beta = calc_spherical_excess(elev1, azi1, elevation, azimuth, elev3, azi3) / denominator
+    gamma = 1 - alpha - beta
+
+    return {"alpha": alpha, "beta": beta, "gamma": gamma}
+
+
+# get alpha, beta, and gamma coeffs for barycentric interpolation
+def calculate_alpha_beta_gamma_cartesian(elevation, azimuth, closest_points):
     # not zero indexing var names in order to match equations in 3D Tune-In Toolkit paper
     elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
     azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]
