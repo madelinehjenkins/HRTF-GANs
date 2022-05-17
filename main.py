@@ -401,7 +401,7 @@ def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, sub
     return interpolated_feature
 
 
-def check_point_in_triangle(elevation, azimuth, triangle_coordinates):
+def triangle_encloses_point(elevation, azimuth, triangle_coordinates):
     # convert point of interest to cartesian coordinates and add to array
     x, y, z, _ = convert_sphere_to_cartesian([[elevation, azimuth]])
     point = np.array([x, y, z])
