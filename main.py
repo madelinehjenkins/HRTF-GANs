@@ -64,10 +64,7 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
     return selected_triangle_vertices
 
 
-def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
-    triangle_vertices = get_triangle_vertices(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
-    coeffs = calc_barycentric_coordinates(elevation=elevation, azimuth=azimuth, closest_points=triangle_vertices)
-
+def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_features):
     # get features for each of the three closest points, add to a list in order of closest to farthest
     features = []
     for p in triangle_vertices:
@@ -80,27 +77,14 @@ def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, sub
     return interpolated_feature
 
 
-def create_interpolated_plots(cs, features, feature_index, edge_len=24):
-    euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=edge_len)
-    all_coords = cs.get_all_coords()
-
-    selected_feature_raw = []
-    for p in cs.get_sphere_coords():
-        if p[0] is not None:
-            features_p = get_feature_for_point(p[0], p[1], all_coords, features)
-            selected_feature_raw.append(features_p[feature_index])
-        else:
-            selected_feature_raw.append(None)
-
-    plot_3d_shape("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
-    plot_3d_shape("cube", cs.get_cube_coords(), shading=selected_feature_raw)
-    plot_flat_cube(cs.get_cube_coords(), shading=selected_feature_raw)
-
+def plot_interpolated_features(cs, features, feature_index, euclidean_cube, euclidean_sphere,
+                               euclidean_sphere_triangles, euclidean_sphere_coeffs):
     selected_feature_interpolated = []
-    for p in euclidean_sphere:
+    for i, p in enumerate(euclidean_sphere):
         if p[0] is not None:
-            features_p = calc_interpolated_feature(elevation=p[0], azimuth=p[1],
-                                                   sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
+            features_p = calc_interpolated_feature(triangle_vertices=euclidean_sphere_triangles[i],
+                                                   coeffs=euclidean_sphere_coeffs[i],
+                                                   all_coords=cs.get_all_coords(),
                                                    subject_features=features)
             selected_feature_interpolated.append(features_p[feature_index])
         else:
@@ -111,13 +95,43 @@ def create_interpolated_plots(cs, features, feature_index, edge_len=24):
     plot_3d_shape("sphere", euclidean_sphere, shading=selected_feature_interpolated)
 
 
+def plot_original_features(cs, features, feature_index):
+    selected_feature_raw = []
+    for p in cs.get_sphere_coords():
+        if p[0] is not None:
+            features_p = get_feature_for_point(p[0], p[1], cs.get_all_coords(), features)
+            selected_feature_raw.append(features_p[feature_index])
+        else:
+            selected_feature_raw.append(None)
+
+    plot_3d_shape("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
+    plot_3d_shape("cube", cs.get_cube_coords(), shading=selected_feature_raw)
+    plot_flat_cube(cs.get_cube_coords(), shading=selected_feature_raw)
+
+
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
 
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    create_interpolated_plots(cs, ds[0]['features'], 20, edge_len=2)
+    euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=2)
+
+    euclidean_sphere_triangles = []
+    euclidean_sphere_coeffs = []
+    for p in euclidean_sphere:
+        if p[0] is not None:
+            triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
+                                                      sphere_coords=cs.get_sphere_coords())
+            coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
+            euclidean_sphere_triangles.append(triangle_vertices)
+            euclidean_sphere_coeffs.append(coeffs)
+        else:
+            euclidean_sphere_triangles.append(None)
+            euclidean_sphere_coeffs.append(None)
+
+    plot_interpolated_features(cs, ds[0]['features'], 20, euclidean_cube, euclidean_sphere,
+                               euclidean_sphere_triangles, euclidean_sphere_coeffs)
 
 
 if __name__ == '__main__':
