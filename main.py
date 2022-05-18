@@ -23,11 +23,11 @@ def load_data(data_folder, load_function, domain, side):
                          subject_ids="first")  # temporary measure to avoid loading entire dataset each time
 
 
-def get_offset(quadrant):
+def calc_offset(quadrant):
     return ((quadrant - 1) / 2) * np.pi
 
 
-def get_panel(elevation, azimuth):
+def calc_panel(elevation, azimuth):
     # use the azimuth to determine the quadrant of the sphere
     if azimuth < np.pi / 4:
         quadrant = 1
@@ -38,7 +38,7 @@ def get_panel(elevation, azimuth):
     else:
         quadrant = 4
 
-    offset = get_offset(quadrant)
+    offset = calc_offset(quadrant)
     threshold_val = np.tan(elevation) / np.cos(azimuth - offset)
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
     if -1 <= threshold_val < 1:
@@ -52,7 +52,7 @@ def get_panel(elevation, azimuth):
 
 
 # used for obtaining cubed sphere coordinates from a pair of spherical coordinates
-def get_cube_coords(elevation, azimuth):
+def convert_sphere_to_cube(elevation, azimuth):
     if elevation is None or azimuth is None:
         # if this position was not measured in the sphere, keep as np.nan in cube
         panel, x, y = np.nan, np.nan, np.nan
@@ -60,10 +60,10 @@ def get_cube_coords(elevation, azimuth):
         # shift the range of azimuth angles such that it works with conversion equations
         if azimuth < -np.pi / 4:
             azimuth += 2 * np.pi
-        panel = get_panel(elevation, azimuth)
+        panel = calc_panel(elevation, azimuth)
 
         if panel <= 4:
-            offset = get_offset(panel)
+            offset = calc_offset(panel)
             x = azimuth - offset
             y = np.arctan(np.tan(elevation) / np.cos(azimuth - offset))
         elif panel == 5:
@@ -76,9 +76,9 @@ def get_cube_coords(elevation, azimuth):
 
 
 # used for obtaining spherical coordinates from cubed sphere coordinates
-def get_sphere_coords(panel, x, y):
+def convert_cube_to_sphere(panel, x, y):
     if panel <= 4:
-        offset = get_offset(panel)
+        offset = calc_offset(panel)
         azimuth = x + offset
         elevation = np.arctan(np.tan(y) * np.cos(x))
     elif panel == 5:
@@ -100,7 +100,7 @@ def get_sphere_coords(panel, x, y):
     return elevation, azimuth
 
 
-def make_3d_plot(shape, coordinates, shading=None):
+def plot_3d_shape(shape, coordinates, shading=None):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Format data.
@@ -126,7 +126,7 @@ def make_3d_plot(shape, coordinates, shading=None):
     plt.show()
 
 
-def make_flat_cube_plot(cube_coords, shading=None):
+def plot_flat_cube(cube_coords, shading=None):
     fig, ax = plt.subplots()
 
     # Format data.
@@ -231,14 +231,14 @@ def convert_cube_to_cartesian(coordinates):
     return np.asarray(x), np.asarray(y), np.asarray(z), mask
 
 
-def generate_euclidean_cube(edge_len=24):
+def generate_euclidean_cube(edge_len=4):
     cube_coords, sphere_coords = [], []
     for panel in range(1, 6):
         for x in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
             for y in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
                 x_i, y_i = x + PI_4 / edge_len, y + PI_4 / edge_len
                 cube_coords.append((panel, x_i, y_i))
-                sphere_coords.append(get_sphere_coords(panel, x_i, y_i))
+                sphere_coords.append(convert_cube_to_sphere(panel, x_i, y_i))
     return cube_coords, sphere_coords
 
 
@@ -270,7 +270,7 @@ def calc_spherical_excess(elevation1, azimuth1, elevation2, azimuth2, elevation3
     return excess
 
 
-def get_point_distances(elevation, azimuth, sphere_coords):
+def calc_all_distances(elevation, azimuth, sphere_coords):
     distances = []
     for elev, azi in sphere_coords:
         if elev is not None and azi is not None:
@@ -282,16 +282,8 @@ def get_point_distances(elevation, azimuth, sphere_coords):
     return sorted(distances, key=lambda x: x[2])
 
 
-# get three closest measured point on sphere for barycentric interpolation
-def get_three_closest(elevation, azimuth, sphere_coords):
-    distances = get_point_distances(elevation, azimuth, sphere_coords)
-
-    # list of (elevation, azimuth, distance) for the 3 closest points
-    return distances[:3]
-
-
 # get alpha, beta, and gamma coeffs for barycentric interpolation (modified for spherical triangle
-def calculate_alpha_beta_gamma(elevation, azimuth, closest_points):
+def calc_barycentric_coordinates(elevation, azimuth, closest_points):
     # not zero indexing var names in order to match equations in 3D Tune-In Toolkit paper
     elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
     azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]
@@ -332,7 +324,6 @@ def get_feature_for_point(elevation, azimuth, all_coords, subject_features):
     return subject_features[azimuth_index][elevation_index]
 
 
-# TODO: I believe this works but it runs very slowly -- how to improve?
 def get_possible_triangles(max_vertex_index, point_distances):
     possible_triangles = []
     for v0 in range(max_vertex_index - 1):
@@ -347,7 +338,7 @@ def get_possible_triangles(max_vertex_index, point_distances):
 def get_triangle_vertices(elevation, azimuth, sphere_coords):
     selected_triangle_vertices = None
     # get distances from point of interest to every other point
-    point_distances = get_point_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+    point_distances = calc_all_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
 
     # first try triangle formed by closest points
     triangle_vertices = [point_distances[0][:2], point_distances[1][:2], point_distances[2][:2]]
@@ -380,7 +371,7 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
 
 def calc_interpolated_feature(elevation, azimuth, sphere_coords, all_coords, subject_features):
     triangle_vertices = get_triangle_vertices(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
-    coeffs = calculate_alpha_beta_gamma(elevation=elevation, azimuth=azimuth, closest_points=triangle_vertices)
+    coeffs = calc_barycentric_coordinates(elevation=elevation, azimuth=azimuth, closest_points=triangle_vertices)
 
     # get features for each of the three closest points, add to a list in order of closest to farthest
     features = []
@@ -418,35 +409,35 @@ def triangle_encloses_point(elevation, azimuth, triangle_coordinates):
     return solution_lambda > 0 and np.all(solution > 0)
 
 
-def make_interpolated_plots(cs, features, feature_index):
+def create_interpolated_plots(cs, features, feature_index):
     euclidean_cube, euclidean_sphere = generate_euclidean_cube()
     all_coords = cs.get_all_coords()
 
     selected_feature_raw = []
-    for p in cs.get_sphere_coords():
+    for p in cs.convert_cube_to_sphere():
         if p[0] is not None:
             features_p = get_feature_for_point(p[0], p[1], all_coords, features)
             selected_feature_raw.append(features_p[feature_index])
         else:
             selected_feature_raw.append(None)
 
-    make_3d_plot("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
-    make_3d_plot("cube", cs.get_cube_coords(), shading=selected_feature_raw)
-    make_flat_cube_plot(cs.get_cube_coords(), shading=selected_feature_raw)
+    plot_3d_shape("sphere", cs.convert_cube_to_sphere(), shading=selected_feature_raw)
+    plot_3d_shape("cube", cs.convert_sphere_to_cube(), shading=selected_feature_raw)
+    plot_flat_cube(cs.convert_sphere_to_cube(), shading=selected_feature_raw)
 
     selected_feature_interpolated = []
     for p in euclidean_sphere:
         if p[0] is not None:
             features_p = calc_interpolated_feature(elevation=p[0], azimuth=p[1],
-                                                   sphere_coords=cs.get_sphere_coords(), all_coords=all_coords,
+                                                   sphere_coords=cs.convert_cube_to_sphere(), all_coords=all_coords,
                                                    subject_features=features)
             selected_feature_interpolated.append(features_p[feature_index])
         else:
             selected_feature_interpolated.append(None)
 
-    make_flat_cube_plot(euclidean_cube, shading=selected_feature_interpolated)
-    make_3d_plot("cube", euclidean_cube, shading=selected_feature_interpolated)
-    make_3d_plot("sphere", euclidean_sphere, shading=selected_feature_interpolated)
+    plot_flat_cube(euclidean_cube, shading=selected_feature_interpolated)
+    plot_3d_shape("cube", euclidean_cube, shading=selected_feature_interpolated)
+    plot_3d_shape("sphere", euclidean_sphere, shading=selected_feature_interpolated)
 
 
 def plot_impulse_response(times):
@@ -478,7 +469,7 @@ class CubedSphere(object):
             self.indices += list(zip(elevation_indices, [azimuth_index] * num_elevation_measurements))
 
         # self.cube_coords is created from measurement_positions, such that order is the same
-        self.cube_coords = list(itertools.starmap(get_cube_coords, self.sphere_coords))
+        self.cube_coords = list(itertools.starmap(convert_sphere_to_cube, self.sphere_coords))
 
         # create pandas dataframe containing all coordinate data (spherical and cubed sphere)
         # this can be useful for debugging
