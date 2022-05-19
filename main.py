@@ -32,35 +32,23 @@ def load_data(data_folder, load_function, domain, side):
                          subject_ids="last")  # temporary measure to avoid loading entire dataset each time
 
 
-def get_triangle_vertices(elevation, azimuth, sphere_coords):
-    selected_triangle_vertices = None
-    # get distances from point of interest to every other point
-    point_distances = calc_all_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
-
-    # first try triangle formed by closest points
-    triangle_vertices = [point_distances[0][:2], point_distances[1][:2], point_distances[2][:2]]
-    if triangle_encloses_point(elevation, azimuth, triangle_vertices):
-        selected_triangle_vertices = triangle_vertices
-    else:
-        # failing that, examine all possible triangles
-        # possible triangles is sorted from shortest total distance to longest total distance
-        possible_triangles = get_possible_triangles(300, point_distances)
-        # TODO: including all vertices is more correct but runs very slowly
-        # possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
-        for v0, v1, v2, _ in possible_triangles:
-            triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
-
-            # for each triangle, check if it encloses the point
-            if triangle_encloses_point(elevation, azimuth, triangle_vertices):
-                selected_triangle_vertices = triangle_vertices
-                if v2 > 10:
-                    print(f'\nselected vertices for {round(elevation, 2), round(azimuth, 2)}: {v0, v1, v2}')
-                    print(elevation, azimuth)
-                    print(selected_triangle_vertices)
-                break
-
-    # if no triangles enclose the point, this will return none
-    return selected_triangle_vertices
+def normalize_smooth_trim_fade(hrir, threshold, pre_window, length):
+    # normalize such that max(abs(hrir)) == 1
+    rescaling_factor = 1 / max(np.abs(hrir))
+    normalized_hrir = rescaling_factor * hrir
+    # smooth HRIR with moving average
+    smoothed_hrir = np.abs((normalized_hrir + [0]) + ([0] + normalized_hrir)) / 2
+    smoothed_hrir[0] = 0
+    # find first time HRIR exceeds some threshold
+    over_threshold_index = list(smoothed_hrir).index(next(i for i in smoothed_hrir if i > threshold))
+    # trim HRIR based on first time threshold is exceeded
+    start = over_threshold_index - pre_window
+    stop = start + length
+    trimmed_hrir = smoothed_hrir[start:stop]
+    # create fade window in order to taper off HRIR towards the end
+    fadeout = np.arange(0.9, -0.1, -0.1).tolist()
+    fade_window = [1] * (length - 10) + fadeout
+    return trimmed_hrir * fade_window
 
 
 def main():
@@ -69,30 +57,19 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    # euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=4)
+    print(ds[0]['features'].mask.shape)
+    print(type(ds[0]['features'][1][0][0]))
+    for i in range(40, 50):
+        for j in range(12, 18):
+            if not ds[0]['features'].mask[i][j][0]:
+                hrir = ds[0]['features'][i][j]
+                plot_impulse_response(normalize_smooth_trim_fade(hrir, threshold=0.8, pre_window=4, length=30))
+    # generate_euclidean_cube(cs.get_sphere_coords(), "euclidean_data_ARI", edge_len=2)
     #
-    # euclidean_sphere_triangles = []
-    # euclidean_sphere_coeffs = []
-    # for p in euclidean_sphere:
-    #     if p[0] is not None:
-    #         triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
-    #                                                   sphere_coords=cs.get_sphere_coords())
-    #         coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
-    #         euclidean_sphere_triangles.append(triangle_vertices)
-    #         euclidean_sphere_coeffs.append(coeffs)
-    #     else:
-    #         euclidean_sphere_triangles.append(None)
-    #         euclidean_sphere_coeffs.append(None)
-    #
-    # # save euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs
-    # with open("euclidean_data", "wb") as file:
-    #     pickle.dump((euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs), file)
-    #
-    # with open("euclidean_data", "rb") as file:
+    # with open("euclidean_data_ARI", "rb") as file:
     #     load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
     #
     # plot_interpolated_features(cs, ds[0]['features'], 30, load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs)
-    save_euclidean_cube()
 
 
 if __name__ == '__main__':
