@@ -16,7 +16,8 @@ from cubed_sphere import CubedSphere
 from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
-from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles
+from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
+    calc_all_interpolated_features
 
 PI_4 = np.pi / 4
 
@@ -57,38 +58,14 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
                     print(selected_triangle_vertices)
                 break
 
-    # if no triangles enclose the point, return none (hopefully this never happens)
-    if selected_triangle_vertices is None:
-        print('it happened')
-        print(f'elevation, azimuth: {round(elevation, 2), round(azimuth, 2)}')
+    # if no triangles enclose the point, this will return none
     return selected_triangle_vertices
-
-
-def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_features):
-    # get features for each of the three closest points, add to a list in order of closest to farthest
-    features = []
-    for p in triangle_vertices:
-        features_p = get_feature_for_point(p[0], p[1], all_coords, subject_features)
-        features.append(features_p)
-
-    # based on equation 6 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
-    interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
-
-    return interpolated_feature
 
 
 def plot_interpolated_features(cs, features, feature_index, euclidean_cube, euclidean_sphere,
                                euclidean_sphere_triangles, euclidean_sphere_coeffs):
-    selected_feature_interpolated = []
-    for i, p in enumerate(euclidean_sphere):
-        if p[0] is not None:
-            features_p = calc_interpolated_feature(triangle_vertices=euclidean_sphere_triangles[i],
-                                                   coeffs=euclidean_sphere_coeffs[i],
-                                                   all_coords=cs.get_all_coords(),
-                                                   subject_features=features)
-            selected_feature_interpolated.append(features_p[feature_index])
-        else:
-            selected_feature_interpolated.append(None)
+    selected_feature_interpolated = calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
+                                                                   euclidean_sphere_triangles, euclidean_sphere_coeffs)
 
     plot_flat_cube(euclidean_cube, shading=selected_feature_interpolated)
     plot_3d_shape("cube", euclidean_cube, shading=selected_feature_interpolated)
@@ -115,7 +92,7 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=2)
+    euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=24)
 
     euclidean_sphere_triangles = []
     euclidean_sphere_coeffs = []

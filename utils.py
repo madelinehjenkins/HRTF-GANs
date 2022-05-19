@@ -56,3 +56,32 @@ def triangle_encloses_point(elevation, azimuth, triangle_coordinates):
     solution_lambda = 1. / solution_sum
 
     return solution_lambda > 0 and np.all(solution > 0)
+
+
+def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_features):
+    # get features for each of the three closest points, add to a list in order of closest to farthest
+    features = []
+    for p in triangle_vertices:
+        features_p = get_feature_for_point(p[0], p[1], all_coords, subject_features)
+        features.append(features_p)
+
+    # based on equation 6 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
+    interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
+
+    return interpolated_feature
+
+
+def calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
+                                   euclidean_sphere_triangles, euclidean_sphere_coeffs):
+    selected_feature_interpolated = []
+    for i, p in enumerate(euclidean_sphere):
+        if p[0] is not None:
+            features_p = calc_interpolated_feature(triangle_vertices=euclidean_sphere_triangles[i],
+                                                   coeffs=euclidean_sphere_coeffs[i],
+                                                   all_coords=cs.get_all_coords(),
+                                                   subject_features=features)
+            selected_feature_interpolated.append(features_p[feature_index])
+        else:
+            selected_feature_interpolated.append(None)
+
+    return selected_feature_interpolated
