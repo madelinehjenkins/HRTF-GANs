@@ -1,4 +1,5 @@
 import itertools
+import pickle
 
 import pandas as pd
 import torch
@@ -17,7 +18,7 @@ from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_inte
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
-    calc_all_interpolated_features
+    calc_all_interpolated_features, save_euclidean_cube
 
 PI_4 = np.pi / 4
 
@@ -28,7 +29,7 @@ def load_data(data_folder, load_function, domain, side):
                          feature_spec={"hrirs": {'side': side, 'domain': domain}},
                          target_spec={"side": {}},
                          group_spec={"subject": {}},
-                         subject_ids="first")  # temporary measure to avoid loading entire dataset each time
+                         subject_ids="last")  # temporary measure to avoid loading entire dataset each time
 
 
 def get_triangle_vertices(elevation, azimuth, sphere_coords):
@@ -68,23 +69,30 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=24)
-
-    euclidean_sphere_triangles = []
-    euclidean_sphere_coeffs = []
-    for p in euclidean_sphere:
-        if p[0] is not None:
-            triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
-                                                      sphere_coords=cs.get_sphere_coords())
-            coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
-            euclidean_sphere_triangles.append(triangle_vertices)
-            euclidean_sphere_coeffs.append(coeffs)
-        else:
-            euclidean_sphere_triangles.append(None)
-            euclidean_sphere_coeffs.append(None)
-
-    plot_interpolated_features(cs, ds[0]['features'], 20, euclidean_cube, euclidean_sphere,
-                               euclidean_sphere_triangles, euclidean_sphere_coeffs)
+    # euclidean_cube, euclidean_sphere = generate_euclidean_cube(edge_len=4)
+    #
+    # euclidean_sphere_triangles = []
+    # euclidean_sphere_coeffs = []
+    # for p in euclidean_sphere:
+    #     if p[0] is not None:
+    #         triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
+    #                                                   sphere_coords=cs.get_sphere_coords())
+    #         coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
+    #         euclidean_sphere_triangles.append(triangle_vertices)
+    #         euclidean_sphere_coeffs.append(coeffs)
+    #     else:
+    #         euclidean_sphere_triangles.append(None)
+    #         euclidean_sphere_coeffs.append(None)
+    #
+    # # save euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs
+    # with open("euclidean_data", "wb") as file:
+    #     pickle.dump((euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs), file)
+    #
+    # with open("euclidean_data", "rb") as file:
+    #     load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
+    #
+    # plot_interpolated_features(cs, ds[0]['features'], 30, load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs)
+    save_euclidean_cube()
 
 
 if __name__ == '__main__':

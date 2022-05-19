@@ -16,6 +16,22 @@ def generate_euclidean_cube(edge_len=24):
     return cube_coords, sphere_coords
 
 
+def save_euclidean_cube(edge_len=24):
+    sphere_coords = []
+    for panel in range(1, 6):
+        for x in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
+            for y in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
+                x_i, y_i = x + PI_4 / edge_len, y + PI_4 / edge_len
+                sphere_coords.append(convert_cube_to_sphere(panel, x_i, y_i))
+    with open('generated_coordinates.txt', 'w') as f:
+        for coord in sphere_coords:
+            print(coord)
+            f.write(str(coord[0]))
+            f.write(", ")
+            f.write(str(coord[1]))
+            f.write('\n')
+
+
 def get_feature_for_point(elevation, azimuth, all_coords, subject_features):
     all_coords_row = all_coords.query(f'elevation == {elevation} & azimuth == {azimuth}')
     azimuth_index = int(all_coords_row.azimuth_index)
