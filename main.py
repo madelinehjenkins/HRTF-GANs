@@ -62,30 +62,6 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
     return selected_triangle_vertices
 
 
-def plot_interpolated_features(cs, features, feature_index, euclidean_cube, euclidean_sphere,
-                               euclidean_sphere_triangles, euclidean_sphere_coeffs):
-    selected_feature_interpolated = calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
-                                                                   euclidean_sphere_triangles, euclidean_sphere_coeffs)
-
-    plot_flat_cube(euclidean_cube, shading=selected_feature_interpolated)
-    plot_3d_shape("cube", euclidean_cube, shading=selected_feature_interpolated)
-    plot_3d_shape("sphere", euclidean_sphere, shading=selected_feature_interpolated)
-
-
-def plot_original_features(cs, features, feature_index):
-    selected_feature_raw = []
-    for p in cs.get_sphere_coords():
-        if p[0] is not None:
-            features_p = get_feature_for_point(p[0], p[1], cs.get_all_coords(), features)
-            selected_feature_raw.append(features_p[feature_index])
-        else:
-            selected_feature_raw.append(None)
-
-    plot_3d_shape("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
-    plot_3d_shape("cube", cs.get_cube_coords(), shading=selected_feature_raw)
-    plot_flat_cube(cs.get_cube_coords(), shading=selected_feature_raw)
-
-
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
 
