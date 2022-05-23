@@ -91,8 +91,11 @@ def plot_flat_cube(cube_coords, shading=None):
     plt.show()
 
 
-def plot_impulse_response(times):
+def plot_impulse_response(times, title=""):
     plt.plot(times)
+    plt.title(title, fontsize=16)
+    plt.xlabel("Time", fontsize=14)
+    plt.ylabel("Magnitude", fontsize=14)
     plt.show()
 
 

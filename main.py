@@ -34,17 +34,20 @@ def load_data(data_folder, load_function, domain, side):
 
 def normalize_smooth_trim_fade(hrir, threshold, pre_window, length):
     # normalize such that max(abs(hrir)) == 1
+    plot_impulse_response(hrir, title="Original HRIR")
     rescaling_factor = 1 / max(np.abs(hrir))
     normalized_hrir = rescaling_factor * hrir
     # smooth HRIR with moving average
     smoothed_hrir = np.abs((normalized_hrir + [0]) + ([0] + normalized_hrir)) / 2
     smoothed_hrir[0] = 0
+    plot_impulse_response(smoothed_hrir, title="Normalized and smoothed HRIR")
     # find first time HRIR exceeds some threshold
     over_threshold_index = list(smoothed_hrir).index(next(i for i in smoothed_hrir if i > threshold))
     # trim HRIR based on first time threshold is exceeded
     start = over_threshold_index - pre_window
     stop = start + length
     trimmed_hrir = smoothed_hrir[start:stop]
+    plot_impulse_response(trimmed_hrir, title="Normalized, smoothed, and trimmed HRIR")
     # create fade window in order to taper off HRIR towards the end
     fadeout = np.arange(0.9, -0.1, -0.1).tolist()
     fade_window = [1] * (length - 10) + fadeout
@@ -59,11 +62,13 @@ def main():
 
     print(ds[0]['features'].mask.shape)
     print(type(ds[0]['features'][1][0][0]))
-    for i in range(40, 50):
-        for j in range(12, 18):
-            if not ds[0]['features'].mask[i][j][0]:
-                hrir = ds[0]['features'][i][j]
-                plot_impulse_response(normalize_smooth_trim_fade(hrir, threshold=0.8, pre_window=4, length=30))
+
+    i = 70
+    j = 10
+    if not ds[0]['features'].mask[i][j][0]:
+        hrir = ds[0]['features'][i][j]
+        transformed_hrir = normalize_smooth_trim_fade(hrir, threshold=0.8, pre_window=4, length=30)
+        plot_impulse_response(transformed_hrir, title="Normalized, smoothed, trimmed, and faded HRIR")
     # generate_euclidean_cube(cs.get_sphere_coords(), "euclidean_data_ARI", edge_len=2)
     #
     # with open("euclidean_data_ARI", "rb") as file:
