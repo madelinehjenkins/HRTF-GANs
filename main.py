@@ -2,6 +2,7 @@ import itertools
 import pickle
 
 import pandas as pd
+import scipy.fft
 import torch
 from hrtfdata.torch.full import ARI, CHEDAR
 from hrtfdata.torch import collate_dict_dataset
@@ -38,17 +39,40 @@ def normalize_smooth_trim_fade(hrir, threshold, pre_window, length):
     plot_impulse_response(hrir, title="Original HRIR")
     rescaling_factor = 1 / max(np.abs(hrir))
     normalized_hrir = rescaling_factor * hrir
+
+    # initialise Kalman filter
+    x = np.array([[0]])
+    p = np.array([[0]])
+
+    h = np.array([[1]])
+
+    # TODO: tune r and q
+    r = np.array([[np.sqrt(400)]])
+    q = np.array([[0.01]])
+
+    filter = kf(x, p, h, q, r)
+    for i, t in enumerate(normalized_hrir):
+        f = np.array([[1]])
+        filter.prediction(f)
+        filter.update(t)
+        if np.abs(filter.get_post_fit_residual()) > 0.01:
+            print(i, round(filter.get_post_fit_residual(), 2))
+
+    # replace moving average with kalman filter
     # smooth HRIR with moving average
-    smoothed_hrir = np.abs((normalized_hrir + [0]) + ([0] + normalized_hrir)) / 2
+    smoothed_hrir = (np.abs((normalized_hrir + [0])) + np.abs(([0] + normalized_hrir)))/ 2
     smoothed_hrir[0] = 0
     plot_impulse_response(smoothed_hrir, title="Normalized and smoothed HRIR")
+
     # find first time HRIR exceeds some threshold
     over_threshold_index = list(smoothed_hrir).index(next(i for i in smoothed_hrir if i > threshold))
+
     # trim HRIR based on first time threshold is exceeded
     start = over_threshold_index - pre_window
     stop = start + length
-    trimmed_hrir = smoothed_hrir[start:stop]
-    plot_impulse_response(trimmed_hrir, title="Normalized, smoothed, and trimmed HRIR")
+    trimmed_hrir = hrir[start:stop]
+    plot_impulse_response(trimmed_hrir, title="Trimmed HRIR")
+
     # create fade window in order to taper off HRIR towards the end
     fadeout = np.arange(0.9, -0.1, -0.1).tolist()
     fade_window = [1] * (length - 10) + fadeout
@@ -69,7 +93,9 @@ def main():
     if not ds[0]['features'].mask[i][j][0]:
         hrir = ds[0]['features'][i][j]
         transformed_hrir = normalize_smooth_trim_fade(hrir, threshold=0.8, pre_window=4, length=30)
-        plot_impulse_response(transformed_hrir, title="Normalized, smoothed, trimmed, and faded HRIR")
+        plot_impulse_response(transformed_hrir, title="Trimmed and faded HRIR")
+        hrtf = scipy.fft.fft(transformed_hrir)
+        print(hrtf)
     # generate_euclidean_cube(cs.get_sphere_coords(), "euclidean_data_ARI", edge_len=2)
     #
     # with open("euclidean_data_ARI", "rb") as file:
