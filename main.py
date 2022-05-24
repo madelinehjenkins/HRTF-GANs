@@ -19,6 +19,7 @@ from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, 
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
     calc_all_interpolated_features, save_euclidean_cube
+from KalmanFilter import KalmanFilter as kf
 
 PI_4 = np.pi / 4
 
