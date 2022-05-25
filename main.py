@@ -77,14 +77,12 @@ def main():
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    print(ds[0]['features'].mask.shape)
-    print(type(ds[0]['features'][1][0][0]))
-
-    i = 70
-    j = 10
+    i = 104
+    j = 5
     if not ds[0]['features'].mask[i][j][0]:
         hrir = ds[0]['features'][i][j]
-        transformed_hrir = normalize_smooth_trim_fade(hrir, threshold=0.8, pre_window=4, length=30)
+        plot_impulse_response(hrir, title="Original HRIR")
+        transformed_hrir = remove_itd(hrir, pre_window=3, length=30)
         plot_impulse_response(transformed_hrir, title="Trimmed and faded HRIR")
         hrtf = scipy.fft.fft(transformed_hrir)
         print(hrtf)
