@@ -34,44 +34,36 @@ def load_data(data_folder, load_function, domain, side):
                          subject_ids="last")  # temporary measure to avoid loading entire dataset each time
 
 
-def normalize_smooth_trim_fade(hrir, threshold, pre_window, length):
+def remove_itd(hrir, pre_window, length):
     # normalize such that max(abs(hrir)) == 1
-    plot_impulse_response(hrir, title="Original HRIR")
     rescaling_factor = 1 / max(np.abs(hrir))
     normalized_hrir = rescaling_factor * hrir
 
     # initialise Kalman filter
-    x = np.array([[0]])
-    p = np.array([[0]])
+    x = np.array([[0]])  # estimated initial state
+    p = np.array([[0]])  # estimated initial variance
 
-    h = np.array([[1]])
+    h = np.array([[1]])  # observation model (observation represents internal state directly)
 
-    # TODO: tune r and q
-    r = np.array([[np.sqrt(400)]])
-    q = np.array([[0.01]])
+    # r and q may require tuning
+    r = np.array([[np.sqrt(400)]])  # variance of the observation noise
+    q = np.array([[0.01]])  # variance of the process noise
 
-    filter = kf(x, p, h, q, r)
-    for i, t in enumerate(normalized_hrir):
-        f = np.array([[1]])
-        filter.prediction(f)
-        filter.update(t)
-        if np.abs(filter.get_post_fit_residual()) > 0.01:
-            print(i, round(filter.get_post_fit_residual(), 2))
+    hrir_filter = kf(x, p, h, q, r)
+    residuals = []
+    for z in normalized_hrir:
+        f = np.array([[1]])  # F is state transition model
+        hrir_filter.prediction(f)
+        hrir_filter.update(z)
+        residuals.append(hrir_filter.get_post_fit_residual())
 
-    # replace moving average with kalman filter
-    # smooth HRIR with moving average
-    smoothed_hrir = (np.abs((normalized_hrir + [0])) + np.abs(([0] + normalized_hrir)))/ 2
-    smoothed_hrir[0] = 0
-    plot_impulse_response(smoothed_hrir, title="Normalized and smoothed HRIR")
-
-    # find first time HRIR exceeds some threshold
-    over_threshold_index = list(smoothed_hrir).index(next(i for i in smoothed_hrir if i > threshold))
+    # find first time post fit residual exceeds some threshold
+    over_threshold_index = list(residuals).index(next(i for i in residuals if i > 0.005))
 
     # trim HRIR based on first time threshold is exceeded
     start = over_threshold_index - pre_window
     stop = start + length
     trimmed_hrir = hrir[start:stop]
-    plot_impulse_response(trimmed_hrir, title="Trimmed HRIR")
 
     # create fade window in order to taper off HRIR towards the end
     fadeout = np.arange(0.9, -0.1, -0.1).tolist()
