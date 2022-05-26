@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 import numpy as np
 
-from matplotlib import cm
+from matplotlib import cm, pyplot as plt
 from collections import Counter
 
 from barycentric_calcs import calc_all_distances, calc_barycentric_coordinates
@@ -50,42 +50,67 @@ def remove_itd(hrir, pre_window, length):
     q = np.array([[0.01]])  # variance of the process noise
 
     hrir_filter = kf(x, p, h, q, r)
-    residuals = []
-    for z in normalized_hrir:
-        f = np.array([[1]])  # F is state transition model
+    f = np.array([[1]])  # F is state transition model
+    for i, z in enumerate(normalized_hrir):
         hrir_filter.prediction(f)
         hrir_filter.update(z)
-        residuals.append(hrir_filter.get_post_fit_residual())
+        # find first time post fit residual exceeds some threshold
+        if np.abs(hrir_filter.get_post_fit_residual()) > 0.005:
+            over_threshold_index = i
+            break
 
-    # find first time post fit residual exceeds some threshold
-    over_threshold_index = list(residuals).index(next(i for i in residuals if i > 0.005))
+    # create fade window in order to taper off HRIR towards the beginning and end
+    fadeout_len = 50
+    fadeout_interval = -1./fadeout_len
+    fadeout = np.arange(1 + fadeout_interval, fadeout_interval, fadeout_interval).tolist()
+
+    fadein_len = 10
+    fadein_interval = 1./fadein_len
+    fadein = np.arange(0.0, 1.0, fadein_interval).tolist()
 
     # trim HRIR based on first time threshold is exceeded
     start = over_threshold_index - pre_window
     stop = start + length
-    trimmed_hrir = hrir[start:stop]
 
-    # create fade window in order to taper off HRIR towards the end
-    fadeout = np.arange(0.9, -0.1, -0.1).tolist()
-    fade_window = [1] * (length - 10) + fadeout
-    return trimmed_hrir * fade_window
+    if len(hrir) >= stop:
+        trimmed_hrir = hrir[start:stop]
+        fade_window = fadein + [1] * (length - fadein_len - fadeout_len) + fadeout
+        faded_hrir = trimmed_hrir * fade_window
+    else:
+        trimmed_hrir = hrir[start:]
+        fade_window = fadein + [1] * (len(trimmed_hrir) - fadein_len - fadeout_len) + fadeout
+        faded_hrir = trimmed_hrir * fade_window
+        zero_pad = [0] * (length - len(trimmed_hrir))
+        faded_hrir = np.ma.append(faded_hrir, zero_pad)
+
+    return faded_hrir
 
 
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
-
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    i = 104
-    j = 5
+    # 90 degree azimuth
+    i = list(ds._selected_angles.keys()).index(90.0)
+    # 0 degrees elevation
+    j = list(ds._selected_angles[90.0]).index(0.0)
     if not ds[0]['features'].mask[i][j][0]:
         hrir = ds[0]['features'][i][j]
-        plot_impulse_response(hrir, title="Original HRIR")
-        transformed_hrir = remove_itd(hrir, pre_window=3, length=30)
-        plot_impulse_response(transformed_hrir, title="Trimmed and faded HRIR")
-        hrtf = scipy.fft.fft(transformed_hrir)
-        print(hrtf)
+        transformed_hrir = remove_itd(hrir, pre_window=10, length=256)
+        fig, axs = plt.subplots(2)
+        fig.suptitle('HRIR (left ear, azimuth=90, elevation=0)', fontsize=16)
+        axs[0].plot(hrir)
+        axs[0].set_xlabel('Time (samples)', fontsize=14)
+        axs[0].set_title('Original', fontsize=16)
+        axs[1].plot(transformed_hrir)
+        axs[1].set_xlabel('Time (samples)', fontsize=14)
+        axs[1].set_title('With ITD removed', fontsize=16)
+        fig.supylabel("Sound Pressure Level", fontsize=14)
+        plt.subplots_adjust(left=0.15, right=0.95, hspace=0.7, top=0.85)
+        plt.show()
+
+        # hrtf = scipy.fft.fft(transformed_hrir)
     # generate_euclidean_cube(cs.get_sphere_coords(), "euclidean_data_ARI", edge_len=2)
     #
     # with open("euclidean_data_ARI", "rb") as file:

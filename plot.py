@@ -95,7 +95,7 @@ def plot_impulse_response(times, title=""):
     plt.plot(times)
     plt.title(title, fontsize=16)
     plt.xlabel("Time", fontsize=14)
-    plt.ylabel("Magnitude", fontsize=14)
+    plt.ylabel("Sound Pressure Level", fontsize=14)
     plt.show()
 
 
