@@ -15,7 +15,7 @@ from collections import Counter
 
 from barycentric_calcs import calc_all_distances, calc_barycentric_coordinates
 from cubed_sphere import CubedSphere
-from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_interpolated_features
+from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_interpolated_features, plot_ir_subplots
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
@@ -98,17 +98,7 @@ def main():
     if not ds[0]['features'].mask[i][j][0]:
         hrir = ds[0]['features'][i][j]
         transformed_hrir = remove_itd(hrir, pre_window=10, length=256)
-        fig, axs = plt.subplots(2)
-        fig.suptitle('HRIR (left ear, azimuth=90, elevation=0)', fontsize=16)
-        axs[0].plot(hrir)
-        axs[0].set_xlabel('Time (samples)', fontsize=14)
-        axs[0].set_title('Original', fontsize=16)
-        axs[1].plot(transformed_hrir)
-        axs[1].set_xlabel('Time (samples)', fontsize=14)
-        axs[1].set_title('With ITD removed', fontsize=16)
-        fig.supylabel("Sound Pressure Level", fontsize=14)
-        plt.subplots_adjust(left=0.15, right=0.95, hspace=0.7, top=0.85)
-        plt.show()
+        plot_ir_subplots(hrir, transformed_hrir, title1='Original', title2='With ITD removed', suptitle='HRIR')
 
         # hrtf = scipy.fft.fft(transformed_hrir)
     # generate_euclidean_cube(cs.get_sphere_coords(), "euclidean_data_ARI", edge_len=2)

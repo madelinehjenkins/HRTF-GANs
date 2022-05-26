@@ -99,6 +99,20 @@ def plot_impulse_response(times, title=""):
     plt.show()
 
 
+def plot_ir_subplots(hrir1, hrir2, title1="", title2="", suptitle=""):
+    fig, axs = plt.subplots(2)
+    fig.suptitle(suptitle, fontsize=16)
+    axs[0].plot(hrir1)
+    axs[0].set_xlabel('Time (samples)', fontsize=14)
+    axs[0].set_title(title1, fontsize=16)
+    axs[1].plot(hrir2)
+    axs[1].set_xlabel('Time (samples)', fontsize=14)
+    axs[1].set_title(title2, fontsize=16)
+    fig.supylabel("Sound Pressure Level", fontsize=14)
+    plt.subplots_adjust(left=0.15, right=0.95, hspace=0.7, top=0.85)
+    plt.show()
+
+
 def plot_interpolated_features(cs, features, feature_index, euclidean_cube, euclidean_sphere,
                                euclidean_sphere_triangles, euclidean_sphere_coeffs):
     selected_feature_interpolated = calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
