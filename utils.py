@@ -1,11 +1,14 @@
+import pickle
+
 import numpy as np
 
+from barycentric_calcs import calc_barycentric_coordinates, calc_all_distances
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cartesian
 
 PI_4 = np.pi / 4
 
 
-def generate_euclidean_cube(edge_len=24):
+def generate_euclidean_cube(measured_coords, filename, edge_len=24):
     cube_coords, sphere_coords = [], []
     for panel in range(1, 6):
         for x in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
@@ -13,7 +16,23 @@ def generate_euclidean_cube(edge_len=24):
                 x_i, y_i = x + PI_4 / edge_len, y + PI_4 / edge_len
                 cube_coords.append((panel, x_i, y_i))
                 sphere_coords.append(convert_cube_to_sphere(panel, x_i, y_i))
-    return cube_coords, sphere_coords
+
+    euclidean_sphere_triangles = []
+    euclidean_sphere_coeffs = []
+    for p in sphere_coords:
+        if p[0] is not None:
+            triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
+                                                      sphere_coords=measured_coords)
+            coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
+            euclidean_sphere_triangles.append(triangle_vertices)
+            euclidean_sphere_coeffs.append(coeffs)
+        else:
+            euclidean_sphere_triangles.append(None)
+            euclidean_sphere_coeffs.append(None)
+
+    # save euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs
+    with open(filename, "wb") as file:
+        pickle.dump((cube_coords, sphere_coords, euclidean_sphere_triangles, euclidean_sphere_coeffs), file)
 
 
 def save_euclidean_cube(edge_len=24):
@@ -72,6 +91,35 @@ def triangle_encloses_point(elevation, azimuth, triangle_coordinates):
     solution_lambda = 1. / solution_sum
 
     return solution_lambda > 0 and np.all(solution > 0)
+
+
+def get_triangle_vertices(elevation, azimuth, sphere_coords):
+    selected_triangle_vertices = None
+    # get distances from point of interest to every other point
+    point_distances = calc_all_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+
+    # first try triangle formed by closest points
+    triangle_vertices = [point_distances[0][:2], point_distances[1][:2], point_distances[2][:2]]
+    if triangle_encloses_point(elevation, azimuth, triangle_vertices):
+        selected_triangle_vertices = triangle_vertices
+    else:
+        # failing that, examine all possible triangles
+        # possible triangles is sorted from shortest total distance to longest total distance
+        possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        for v0, v1, v2, _ in possible_triangles:
+            triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
+
+            # for each triangle, check if it encloses the point
+            if triangle_encloses_point(elevation, azimuth, triangle_vertices):
+                selected_triangle_vertices = triangle_vertices
+                if v2 > 10:
+                    print(f'\nselected vertices for {round(elevation, 2), round(azimuth, 2)}: {v0, v1, v2}')
+                    print(elevation, azimuth)
+                    print(selected_triangle_vertices)
+                break
+
+    # if no triangles enclose the point, this will return none
+    return selected_triangle_vertices
 
 
 def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_features):
