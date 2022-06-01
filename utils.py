@@ -138,8 +138,7 @@ def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_fea
     return interpolated_feature
 
 
-def calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
-                                   euclidean_sphere_triangles, euclidean_sphere_coeffs):
+def calc_all_interpolated_features(cs, features, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs):
     selected_feature_interpolated = []
     for i, p in enumerate(euclidean_sphere):
         if p[0] is not None:
@@ -147,8 +146,22 @@ def calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere
                                                    coeffs=euclidean_sphere_coeffs[i],
                                                    all_coords=cs.get_all_coords(),
                                                    subject_features=features)
-            selected_feature_interpolated.append(features_p[feature_index])
+
+            selected_feature_interpolated.append(features_p)
         else:
             selected_feature_interpolated.append(None)
 
     return selected_feature_interpolated
+
+
+def calc_hrtf(hrirs):
+    magnitudes = []
+    phases = []
+    for hrir in hrirs:
+        hrtf = scipy.fft.fft(hrir)
+        magnitude = abs(hrtf)
+        phase = [cmath.phase(x) for x in hrtf]
+        magnitudes.append(magnitude)
+        phases.append(phase)
+
+    return magnitudes, phases
