@@ -17,7 +17,7 @@ from collections import Counter
 from barycentric_calcs import calc_all_distances, calc_barycentric_coordinates
 from cubed_sphere import CubedSphere
 from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_interpolated_features, plot_ir_subplots, \
-    plot_original_features
+    plot_original_features, plot_padded_panel, plot_padded_panels
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
@@ -89,18 +89,9 @@ def remove_itd(hrir, pre_window, length):
 
 
 def main():
-    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
+    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='right')
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
-
-    # 90 degree azimuth
-    # i = list(ds._selected_angles.keys()).index(90.0)
-    # # 0 degrees elevation
-    # j = list(ds._selected_angles[90.0]).index(0.0)
-    # if not ds[0]['features'].mask[i][j][0]:
-    #     hrir = ds[0]['features'][i][j]
-    #     transformed_hrir = remove_itd(hrir, pre_window=10, length=256)
-    # plot_ir_subplots(hrir, transformed_hrir, title1='Original', title2='With ITD removed', suptitle='HRIR')
 
     # generate_euclidean_cube(cs.get_sphere_coords(), "ARI_projection_4", edge_len=4)
 
@@ -127,20 +118,25 @@ def main():
         k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
 
         # TODO: remove the 0 index from the magnitudes -- this is only for testing purposes
-        magnitudes_list[i][j + pad_width][k + pad_width] = magnitudes[count][0]
+        magnitudes_list[i][j + pad_width][k + pad_width] = magnitudes[count]
 
         count += 1
 
     magnitudes_pad = pad_cubed_sphere(magnitudes_list)
 
     # convert list of numpy arrays into a single array, such that converting into tensor is faster
-    magnitudes_tensor = torch.tensor(np.array(magnitudes_list))
-    print(magnitudes_tensor[0])
-    magnitudes_tensor2 = torch.tensor(np.array(magnitudes_pad))
-    print(magnitudes_tensor2[0])
+    magnitudes_tensor = torch.tensor(np.array(magnitudes_pad))
+
+    print(magnitudes_tensor.shape)
+    # print(torch.select(magnitudes_tensor, 3, 0).shape)
+
+    # for panel in range(5):
+    #     plot_padded_panel(magnitudes_tensor[panel], edge_len, f"Panel {panel} with padding")
+    # plot_padded_panels(magnitudes_tensor, edge_len, "All cube faces, with padded areas shown outside hashes")
+
+    plot_padded_panels(torch.select(magnitudes_tensor, 3, 100), edge_len, "All cube faces, with padded areas shown outside hashes")
     print([round(x[0], 4) for x in magnitudes[64:80]])
     print(load_cube[64:80])
-    print(magnitudes_tensor.shape)
 
 
 if __name__ == '__main__':
