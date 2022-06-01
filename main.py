@@ -17,7 +17,7 @@ from collections import Counter
 from barycentric_calcs import calc_all_distances, calc_barycentric_coordinates
 from cubed_sphere import CubedSphere
 from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_interpolated_features, plot_ir_subplots, \
-    plot_original_features, plot_padded_panel, plot_padded_panels
+    plot_original_features, plot_padded_panels
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
@@ -105,38 +105,30 @@ def main():
     magnitudes, phases = calc_hrtf(interpolated_hrirs)
 
     edge_len = 4
-    pad_width = 0
-    tensor_width = edge_len + 2 * pad_width
-    # create empty list of lists of lists
-    magnitudes_list = [[[[] for _ in range(tensor_width)] for _ in range(tensor_width)] for _ in range(5)]
+    pad_width = 1
 
+    # create empty list of lists of lists and initialize counter
+    magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
     count = 0
+
     for panel, x, y in load_cube:
         # based on cube coordinates, get indices for magnitudes list of lists
         i = panel - 1
         j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
         k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
 
-        # TODO: remove the 0 index from the magnitudes -- this is only for testing purposes
-        magnitudes_list[i][j + pad_width][k + pad_width] = magnitudes[count]
-
+        # add to list of lists of lists and increment counter
+        magnitudes_raw[i][j][k] = magnitudes[count]
         count += 1
 
-    magnitudes_pad = pad_cubed_sphere(magnitudes_list)
+    # pad each panel of the cubed sphere appropriately
+    magnitudes_pad = pad_cubed_sphere(magnitudes_raw, pad_width)
 
     # convert list of numpy arrays into a single array, such that converting into tensor is faster
     magnitudes_tensor = torch.tensor(np.array(magnitudes_pad))
 
-    print(magnitudes_tensor.shape)
-    # print(torch.select(magnitudes_tensor, 3, 0).shape)
-
-    # for panel in range(5):
-    #     plot_padded_panel(magnitudes_tensor[panel], edge_len, f"Panel {panel} with padding")
-    # plot_padded_panels(magnitudes_tensor, edge_len, "All cube faces, with padded areas shown outside hashes")
-
-    plot_padded_panels(torch.select(magnitudes_tensor, 3, 100), edge_len, "All cube faces, with padded areas shown outside hashes")
-    print([round(x[0], 4) for x in magnitudes[64:80]])
-    print(load_cube[64:80])
+    plot_padded_panels(torch.select(magnitudes_tensor, 3, 10), edge_len, pad_width=pad_width,
+                       label_cells=False, title="All cube faces, with padded areas shown outside hashes")
 
 
 if __name__ == '__main__':
