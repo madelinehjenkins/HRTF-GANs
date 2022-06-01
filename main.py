@@ -21,8 +21,8 @@ def load_data(data_folder, load_function, domain, side):
     return load_function(base_dir / data_folder,
                          feature_spec={"hrirs": {'side': side, 'domain': domain}},
                          target_spec={"side": {}},
-                         group_spec={"subject": {}},
-                         subject_ids="last")  # temporary measure to avoid loading entire dataset each time
+                         group_spec={"subject": {}})  # ,
+    # subject_ids="last")
 
 
 def remove_itd(hrir, pre_window, length):
@@ -78,7 +78,7 @@ def remove_itd(hrir, pre_window, length):
 
 
 def main():
-    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='right')
+    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='both')
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
