@@ -107,14 +107,15 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
     else:
         # failing that, examine all possible triangles
         # possible triangles is sorted from shortest total distance to longest total distance
-        possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        # possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        possible_triangles = get_possible_triangles(400, point_distances)
         for v0, v1, v2, _ in possible_triangles:
             triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
 
             # for each triangle, check if it encloses the point
             if triangle_encloses_point(elevation, azimuth, triangle_vertices):
                 selected_triangle_vertices = triangle_vertices
-                if v2 > 10:
+                if v2 > 300:
                     print(f'\nselected vertices for {round(elevation, 2), round(azimuth, 2)}: {v0, v1, v2}')
                     print(elevation, azimuth)
                     print(selected_triangle_vertices)
