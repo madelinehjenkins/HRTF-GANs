@@ -150,14 +150,14 @@ def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
         axs[row, col].imshow(plot_tensor, vmin=torch.min(panel_tensors), vmax=torch.max(panel_tensors))
 
         # Create a Rectangle patch to outline panel and separate padded area
-        rect = patches.Rectangle((0.5, 0.5), edge_len, edge_len,
+        rect = patches.Rectangle((0.5 + (pad_width - 1), 0.5 + (pad_width - 1)), edge_len, edge_len,
                                  linewidth=1, edgecolor='white', facecolor='none', hatch='/')
         # Add the patch to the Axes
         axs[row, col].add_patch(rect)
 
         if label_cells:
-            for i in range(edge_len + 2):
-                for j in range(edge_len + 2):
+            for i in range(edge_len + 2*pad_width):
+                for j in range(edge_len + 2*pad_width):
                     axs[row, col].text(j, i, round(1000*plot_tensor[i][j].item(), 1), ha="center", va="center", color="w")
 
     axs[0, 0].axis('off')
