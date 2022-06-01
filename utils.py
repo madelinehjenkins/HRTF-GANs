@@ -193,16 +193,16 @@ def pad_cubed_sphere(magnitudes):
         # In all cases, low values of x and y are situated in lower left of the unfolded sphere
 
         if panel == 0:
-            top_edge = panel_edges[4]['bottom']
+            top_edge = panel_edges[4]['bottom'].copy()
         elif panel == 1:
-            top_edge = panel_edges[4]['right']
+            top_edge = panel_edges[4]['right'].copy()
         elif panel == 2:
             # need to reverse
-            top_edge = panel_edges[4]['top']
+            top_edge = panel_edges[4]['top'].copy()
             top_edge.reverse()
         else:
             # need to reverse
-            top_edge = panel_edges[4]['left']
+            top_edge = panel_edges[4]['left'].copy()
             top_edge.reverse()
 
         # pad TOP AND BOTTOM of panel on a column by column basis
@@ -229,8 +229,8 @@ def pad_cubed_sphere(magnitudes):
 
     # now pad for the top panel (panel 4)
     column_list = []
-    bottom_edge = panel_edges[0]['top']
-    top_edge = panel_edges[2]['top']
+    bottom_edge = panel_edges[0]['top'].copy()
+    top_edge = panel_edges[2]['top'].copy()
     top_edge.reverse()
     for i in range(edge_len):
         column = magnitudes[4][i]
@@ -238,11 +238,11 @@ def pad_cubed_sphere(magnitudes):
         column_list.append(col_pad)
 
     # get the top row of panel 3, reverse it, and pad top and bottom with edge values
-    left_col = panel_edges[3]['top']
+    left_col = panel_edges[3]['top'].copy()
     left_col.reverse()
     left_col_pad = [[left_col[0]] + left_col + [left_col[-1]]]
     # get the top row of panel 1, and pad top and bottom with edge values
-    right_col = panel_edges[1]['top']
+    right_col = panel_edges[1]['top'].copy()
     right_col_pad = [[right_col[0]] + right_col + [right_col[-1]]]
 
     # COMBINE left column, padded center columns, and right column to get final version
