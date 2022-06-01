@@ -88,28 +88,6 @@ def remove_itd(hrir, pre_window, length):
     return faded_hrir
 
 
-def bottom_to_top(k, tensor_width, pad_width):
-    return k + tensor_width - pad_width
-
-
-def top_to_bottom(k, tensor_width, pad_width):
-    edge_len = tensor_width - 2*pad_width
-    return k + pad_width - edge_len
-
-
-# TODO: I believe this is not working right
-def top_to_top(k, pad_width):
-    return k + 2*pad_width
-
-
-def align(k, pad_width):
-    return k + pad_width
-
-
-def flip(i, tensor_width, pad_width):
-    return tensor_width - pad_width - i - 1
-
-
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
     # need to use protected member to get this data, no getters
@@ -136,8 +114,8 @@ def main():
     magnitudes, phases = calc_hrtf(interpolated_hrirs)
 
     edge_len = 4
-    pad_width = 2
-    tensor_width = edge_len + 2*pad_width
+    pad_width = 0
+    tensor_width = edge_len + 2 * pad_width
     # create empty list of lists of lists
     magnitudes_list = [[[[] for _ in range(tensor_width)] for _ in range(tensor_width)] for _ in range(5)]
 
