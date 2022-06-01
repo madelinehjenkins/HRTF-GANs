@@ -87,37 +87,15 @@ def main():
     with open("ARI_projection_4", "rb") as file:
         load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
 
-    # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
-    # load_cube, all three lists share the same ordering
-    interpolated_hrirs = calc_all_interpolated_features(cs, ds[0]['features'],
-                                                        load_sphere, load_sphere_triangles, load_sphere_coeffs)
-    magnitudes, phases = calc_hrtf(interpolated_hrirs)
-
     edge_len = 4
     pad_width = 1
+    all_subects = interpolate_fft_pad_all(cs, ds, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
+                                          edge_len, pad_width)
 
-    # create empty list of lists of lists and initialize counter
-    magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
-    count = 0
-
-    for panel, x, y in load_cube:
-        # based on cube coordinates, get indices for magnitudes list of lists
-        i = panel - 1
-        j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
-        k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
-
-        # add to list of lists of lists and increment counter
-        magnitudes_raw[i][j][k] = magnitudes[count]
-        count += 1
-
-    # pad each panel of the cubed sphere appropriately
-    magnitudes_pad = pad_cubed_sphere(magnitudes_raw, pad_width)
-
-    # convert list of numpy arrays into a single array, such that converting into tensor is faster
-    magnitudes_tensor = torch.tensor(np.array(magnitudes_pad))
-
-    plot_padded_panels(torch.select(magnitudes_tensor, 3, 10), edge_len, pad_width=pad_width,
-                       label_cells=False, title="All cube faces, with padded areas shown outside hashes")
+    for mag_tensor in all_subects:
+        plot_padded_panels(torch.select(mag_tensor, 3, 5), edge_len, pad_width=pad_width,
+                           label_cells=False,
+                           title=f"All cube faces, with padded areas shown outside hashes ({subject})")
 
 
 if __name__ == '__main__':
