@@ -89,8 +89,12 @@ def main():
 
     edge_len = 4
     pad_width = 1
-    all_subects = interpolate_fft_pad_all(cs, ds, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
-                                          edge_len, pad_width)
+    all_subects = []
+    for subject in range(len(ds)):
+        print(f"Subject {subject} out of {len(ds)} ({round(100 * subject / len(ds))}%)")
+        all_subects.append(interpolate_fft_pad_all(cs, ds[subject],
+                                                   load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
+                                                   edge_len, pad_width))
 
     for mag_tensor in all_subects:
         plot_padded_panels(torch.select(mag_tensor, 3, 5), edge_len, pad_width=pad_width,

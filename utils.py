@@ -265,11 +265,11 @@ def pad_top_panel(magnitudes_top, panel_edges, edge_len, pad_width):
     # get the top row of panel 3, reverse it, and pad top and bottom with edge values
     left_col = panel_edges[3]['top'].copy()
     left_col.reverse()
-    left_col_pad = pad_width*[left_col[0]] + left_col + pad_width*[left_col[-1]]
+    left_col_pad = pad_width * [left_col[0]] + left_col + pad_width * [left_col[-1]]
 
     # get the top row of panel 1, and pad top and bottom with edge values
     right_col = panel_edges[1]['top'].copy()
-    right_col_pad = pad_width*[right_col[0]] + right_col + pad_width*[right_col[-1]]
+    right_col_pad = pad_width * [right_col[0]] + right_col + pad_width * [right_col[-1]]
     right_col_pad = [list(reversed(col)) for col in right_col_pad]
 
     # convert from columns to rows
@@ -287,7 +287,7 @@ def pad_cubed_sphere(magnitudes, pad_width):
     panel_edges = create_edge_dict(magnitudes, pad_width)
 
     # create empty list of lists of lists
-    magnitudes_pad = [[[[] for _ in range(edge_len + 2*pad_width)] for _ in range(edge_len + 2*pad_width)]
+    magnitudes_pad = [[[[] for _ in range(edge_len + 2 * pad_width)] for _ in range(edge_len + 2 * pad_width)]
                       for _ in range(5)]
 
     # diagram of unfolded cube, with panel indices
@@ -309,35 +309,30 @@ def pad_cubed_sphere(magnitudes, pad_width):
 
     return magnitudes_pad
 
-def interpolate_fft_pad_all(cs, ds, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
-                            edge_len, pad_width):
-    all_subects = []
-    for subject in range(len(ds)):
-        print(f"Subject {subject} out of {len(ds)} ({round(100*subject/len(ds))}%)")
-        # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
-        # load_cube, all three lists share the same ordering
-        interpolated_hrirs = calc_all_interpolated_features(cs, ds[subject]['features'],
-                                                            load_sphere, load_sphere_triangles, load_sphere_coeffs)
-        magnitudes, phases = calc_hrtf(interpolated_hrirs)
 
-        # create empty list of lists of lists and initialize counter
-        magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
-        count = 0
+def interpolate_fft_pad(cs, ds, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len, pad_width):
+    # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
+    # load_cube, all three lists share the same ordering
+    interpolated_hrirs = calc_all_interpolated_features(cs, ds['features'],
+                                                        load_sphere, load_sphere_triangles, load_sphere_coeffs)
+    magnitudes, phases = calc_hrtf(interpolated_hrirs)
 
-        for panel, x, y in load_cube:
-            # based on cube coordinates, get indices for magnitudes list of lists
-            i = panel - 1
-            j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
-            k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+    # create empty list of lists of lists and initialize counter
+    magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
+    count = 0
 
-            # add to list of lists of lists and increment counter
-            magnitudes_raw[i][j][k] = magnitudes[count]
-            count += 1
+    for panel, x, y in load_cube:
+        # based on cube coordinates, get indices for magnitudes list of lists
+        i = panel - 1
+        j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+        k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
 
-        # pad each panel of the cubed sphere appropriately
-        magnitudes_pad = pad_cubed_sphere(magnitudes_raw, pad_width)
+        # add to list of lists of lists and increment counter
+        magnitudes_raw[i][j][k] = magnitudes[count]
+        count += 1
 
-        # convert list of numpy arrays into a single array, such that converting into tensor is faster
-        all_subects.append(torch.tensor(np.array(magnitudes_pad)))
+    # pad each panel of the cubed sphere appropriately
+    magnitudes_pad = pad_cubed_sphere(magnitudes_raw, pad_width)
 
-    return all_subects
+    # convert list of numpy arrays into a single array, such that converting into tensor is faster
+    return torch.tensor(np.array(magnitudes_pad))
