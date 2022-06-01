@@ -63,11 +63,11 @@ def remove_itd(hrir, pre_window, length):
 
     # create fade window in order to taper off HRIR towards the beginning and end
     fadeout_len = 50
-    fadeout_interval = -1./fadeout_len
+    fadeout_interval = -1. / fadeout_len
     fadeout = np.arange(1 + fadeout_interval, fadeout_interval, fadeout_interval).tolist()
 
     fadein_len = 10
-    fadein_interval = 1./fadein_len
+    fadein_interval = 1. / fadein_len
     fadein = np.arange(0.0, 1.0, fadein_interval).tolist()
 
     # trim HRIR based on first time threshold is exceeded
