@@ -10,7 +10,7 @@ from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_inte
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
-    calc_all_interpolated_features, save_euclidean_cube, calc_hrtf, pad_cubed_sphere, interpolate_fft_pad_all
+    calc_all_interpolated_features, save_euclidean_cube, calc_hrtf, pad_cubed_sphere, interpolate_fft_pad
 from KalmanFilter import KalmanFilter as kf
 
 PI_4 = np.pi / 4
@@ -92,14 +92,14 @@ def main():
     all_subects = []
     for subject in range(len(ds)):
         print(f"Subject {subject} out of {len(ds)} ({round(100 * subject / len(ds))}%)")
-        all_subects.append(interpolate_fft_pad_all(cs, ds[subject],
-                                                   load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
-                                                   edge_len, pad_width))
+        all_subects.append(interpolate_fft_pad(cs, ds[subject],
+                                               load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
+                                               edge_len, pad_width))
 
     for mag_tensor in all_subects:
         plot_padded_panels(torch.select(mag_tensor, 3, 5), edge_len, pad_width=pad_width,
                            label_cells=False,
-                           title=f"All cube faces, with padded areas shown outside hashes ({subject})")
+                           title=f"All cube faces, with padded areas shown outside hashes")
 
 
 if __name__ == '__main__':
