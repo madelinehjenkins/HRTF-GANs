@@ -129,65 +129,18 @@ def main():
         # TODO: remove the 0 index from the magnitudes -- this is only for testing purposes
         magnitudes_list[i][j + pad_width][k + pad_width] = magnitudes[count][0]
 
-        if j < pad_width:
-            pass
-        elif j >= edge_len-pad_width:
-            pass
-        if k < pad_width:
-            pass
-        if panel < 5:
-            if k >= edge_len - pad_width:
-                # top edge of panels 1-4 contribute padding to panel 5
-                if panel == 1:
-                    pad_j = align(j, pad_width)
-                    pad_k = top_to_bottom(k, tensor_width, pad_width)
-                    magnitudes_list[4][pad_j][pad_k] = magnitudes[count][0]
-                elif panel == 2:
-                    pad_j = top_to_top(k, pad_width)
-                    pad_k = align(j, pad_width)
-                    magnitudes_list[4][pad_j][pad_k] = magnitudes[count][0]
-                elif panel == 3:
-                    pad_j = flip(j, tensor_width, pad_width)
-                    pad_k = top_to_top(k, pad_width)
-                    print(f'x, y: {j + pad_width, k + pad_width} and new: {pad_j, pad_k}')
-                    magnitudes_list[4][pad_j][pad_k] = magnitudes[count][0]
-                else:
-                    pad_j = top_to_bottom(k, tensor_width, pad_width)
-                    pad_k = flip(j, tensor_width, pad_width)
-                    magnitudes_list[4][pad_j][pad_k] = magnitudes[count][0]
-        elif panel == 5:
-            if k >= edge_len-pad_width:
-                # top edge of panel 5 contributes padding to panel 3
-                pad_j = flip(j, tensor_width, pad_width)
-                pad_k = top_to_top(k, pad_width)
-                magnitudes_list[2][pad_j][pad_k] = magnitudes[count][0]
-            if k < pad_width:
-                # bottom edge of panel 5 contributes padding to panel 1
-                pad_j = align(j, pad_width)
-                pad_k = bottom_to_top(k, tensor_width, pad_width)
-                magnitudes_list[0][pad_j][pad_k] = magnitudes[count][0]
-            if j >= edge_len-pad_width:
-                # right edge of panel 5 contributes padding to panel 2
-                pad_j = align(k, pad_width)
-                pad_k = top_to_top(j, pad_width)
-                magnitudes_list[1][pad_j][pad_k] = magnitudes[count][0]
-            if j < pad_width:
-                # left edge of panel 5 contributes padding to panel 4
-                pad_j = flip(k, tensor_width, pad_width)
-                pad_k = bottom_to_top(j, tensor_width, pad_width)
-                magnitudes_list[3][pad_j][pad_k] = magnitudes[count][0]
-
-
-
         count += 1
 
+    magnitudes_pad = pad_cubed_sphere(magnitudes_list)
+
     # convert list of numpy arrays into a single array, such that converting into tensor is faster
-    # magnitudes_tensor = torch.tensor(np.array(magnitudes_list))
-    # print(magnitudes_list[4])
-    # print(magnitudes_tensor[4])
-    # print([round(x[0], 4) for x in magnitudes[64:80]])
-    # print(load_cube[64:80])
-    # print(magnitudes_tensor.shape)
+    magnitudes_tensor = torch.tensor(np.array(magnitudes_list))
+    print(magnitudes_tensor[0])
+    magnitudes_tensor2 = torch.tensor(np.array(magnitudes_pad))
+    print(magnitudes_tensor2[0])
+    print([round(x[0], 4) for x in magnitudes[64:80]])
+    print(load_cube[64:80])
+    print(magnitudes_tensor.shape)
 
 
 if __name__ == '__main__':
