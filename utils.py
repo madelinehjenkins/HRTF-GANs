@@ -165,3 +165,87 @@ def calc_hrtf(hrirs):
         phases.append(phase)
 
     return magnitudes, phases
+
+
+def pad_cubed_sphere(magnitudes):
+    edge_len = len(magnitudes[0])
+    # create a list of dictionaries (one for each panel) containing the left, right, top and bottom edges for each panel
+    panel_edges = []
+    for panel in range(5):
+        left = magnitudes[panel][0]  # get left column (all lowest x)
+        right = magnitudes[panel][-1]  # get right column (all highest x)
+        bottom = [x[0] for x in magnitudes[panel]]  # get bottom row (all lowest y)
+        top = [x[-1] for x in magnitudes[panel]]  # get bottom row (all highest y)
+        edge_dict = {'left': left, 'right': right, 'top': top, 'bottom': bottom}
+        panel_edges.append(edge_dict)
+
+    magnitudes_pad = [[[[] for _ in range(edge_len + 2)] for _ in range(edge_len + 2)] for _ in range(5)]
+    # pad the 4 panels around the horizontal plane
+    for panel in range(4):
+        # get row/column from panel 4 to pad top edge
+        #             _______
+        #            |       |
+        #            |   4   |
+        #     _______|_______|_______ _______
+        #    |       |       |       |       |
+        #    |   3   |   0   |   1   |   2   |
+        #    |_______|_______|_______|_______|
+        # In all cases, low values of x and y are situated in lower left of the unfolded sphere
+
+        if panel == 0:
+            top_edge = panel_edges[4]['bottom']
+        elif panel == 1:
+            top_edge = panel_edges[4]['right']
+        elif panel == 2:
+            # need to reverse
+            top_edge = panel_edges[4]['top']
+            top_edge.reverse()
+        else:
+            # need to reverse
+            top_edge = panel_edges[4]['left']
+            top_edge.reverse()
+
+        # pad TOP AND BOTTOM of panel on a column by column basis
+        # pad bottom of column via replication
+        column_list = []
+        for i in range(edge_len):
+            column = magnitudes[panel][i]
+            col_pad = [column[0]] + column + [top_edge[i]]
+            column_list.append(col_pad)
+
+        # pad LEFT AND RIGHT side of each panel around horizontal plane
+        # get panel index for left and right panel
+        left_panel = (panel - 1) % 4
+        right_panel = (panel + 1) % 4
+        # get the rightmost column of the left panel, and pad top and bottom with edge values
+        left_col = panel_edges[left_panel]['right']
+        left_col_pad = [[left_col[0]] + left_col + [left_col[-1]]]
+        # get the leftmost column of the right panel, and pad top and bottom with edge values
+        right_col = panel_edges[right_panel]['left']
+        right_col_pad = [[right_col[0]] + right_col + [right_col[-1]]]
+
+        # COMBINE left column, padded center columns, and right column to get final version
+        magnitudes_pad[panel] = left_col_pad + column_list + right_col_pad
+
+    # now pad for the top panel (panel 4)
+    column_list = []
+    bottom_edge = panel_edges[0]['top']
+    top_edge = panel_edges[2]['top']
+    top_edge.reverse()
+    for i in range(edge_len):
+        column = magnitudes[4][i]
+        col_pad = [bottom_edge[i]] + column + [top_edge[i]]
+        column_list.append(col_pad)
+
+    # get the top row of panel 3, reverse it, and pad top and bottom with edge values
+    left_col = panel_edges[3]['top']
+    left_col.reverse()
+    left_col_pad = [[left_col[0]] + left_col + [left_col[-1]]]
+    # get the top row of panel 1, and pad top and bottom with edge values
+    right_col = panel_edges[1]['top']
+    right_col_pad = [[right_col[0]] + right_col + [right_col[-1]]]
+
+    # COMBINE left column, padded center columns, and right column to get final version
+    magnitudes_pad[4] = left_col_pad + column_list + right_col_pad
+
+    return(magnitudes_pad)
