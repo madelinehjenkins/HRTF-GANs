@@ -1,25 +1,16 @@
-import itertools
 import pickle
-
-import pandas as pd
-import scipy.fft
 import torch
 from hrtfdata.torch.full import ARI, CHEDAR
-from hrtfdata.torch import collate_dict_dataset
-from torch.utils.data import DataLoader
 from pathlib import Path
 import numpy as np
 
-from matplotlib import cm, pyplot as plt
-from collections import Counter
-
-from barycentric_calcs import calc_all_distances, calc_barycentric_coordinates
 from cubed_sphere import CubedSphere
-from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_interpolated_features, plot_ir_subplots
+from plot import plot_3d_shape, plot_flat_cube, plot_impulse_response, plot_interpolated_features, plot_ir_subplots, \
+    plot_original_features, plot_padded_panels
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cube, convert_sphere_to_cartesian, \
     convert_cube_to_cartesian
 from utils import get_feature_for_point, generate_euclidean_cube, triangle_encloses_point, get_possible_triangles, \
-    calc_all_interpolated_features, save_euclidean_cube
+    calc_all_interpolated_features, save_euclidean_cube, calc_hrtf, pad_cubed_sphere, interpolate_fft_pad
 from KalmanFilter import KalmanFilter as kf
 
 PI_4 = np.pi / 4
@@ -30,8 +21,7 @@ def load_data(data_folder, load_function, domain, side):
     return load_function(base_dir / data_folder,
                          feature_spec={"hrirs": {'side': side, 'domain': domain}},
                          target_spec={"side": {}},
-                         group_spec={"subject": {}},
-                         subject_ids="last")  # temporary measure to avoid loading entire dataset each time
+                         group_spec={"subject": {}}, subject_ids="last")
 
 
 def remove_itd(hrir, pre_window, length):
@@ -61,11 +51,11 @@ def remove_itd(hrir, pre_window, length):
 
     # create fade window in order to taper off HRIR towards the beginning and end
     fadeout_len = 50
-    fadeout_interval = -1./fadeout_len
+    fadeout_interval = -1. / fadeout_len
     fadeout = np.arange(1 + fadeout_interval, fadeout_interval, fadeout_interval).tolist()
 
     fadein_len = 10
-    fadein_interval = 1./fadein_len
+    fadein_interval = 1. / fadein_len
     fadein = np.arange(0.0, 1.0, fadein_interval).tolist()
 
     # trim HRIR based on first time threshold is exceeded
@@ -87,26 +77,28 @@ def remove_itd(hrir, pre_window, length):
 
 
 def main():
-    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left')
+    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='both')
     # need to use protected member to get this data, no getters
     cs = CubedSphere(sphere_coords=ds._selected_angles)
 
-    # 90 degree azimuth
-    i = list(ds._selected_angles.keys()).index(90.0)
-    # 0 degrees elevation
-    j = list(ds._selected_angles[90.0]).index(0.0)
-    if not ds[0]['features'].mask[i][j][0]:
-        hrir = ds[0]['features'][i][j]
-        transformed_hrir = remove_itd(hrir, pre_window=10, length=256)
-        plot_ir_subplots(hrir, transformed_hrir, title1='Original', title2='With ITD removed', suptitle='HRIR')
+    # generate_euclidean_cube(cs.get_sphere_coords(), "ARI_projection_16", edge_len=16)
 
-        # hrtf = scipy.fft.fft(transformed_hrir)
-    # generate_euclidean_cube(cs.get_sphere_coords(), "euclidean_data_ARI", edge_len=2)
-    #
-    # with open("euclidean_data_ARI", "rb") as file:
-    #     load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
-    #
-    # plot_interpolated_features(cs, ds[0]['features'], 30, load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs)
+    with open("ARI_projection_16", "rb") as file:
+        load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
+
+    edge_len = 16
+    pad_width = 2
+    all_subects = []
+    for subject in range(len(ds)):
+        print(f"Subject {subject} out of {len(ds)} ({round(100 * subject / len(ds))}%)")
+        all_subects.append(interpolate_fft_pad(cs, ds[subject],
+                                               load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
+                                               edge_len, pad_width))
+
+    for mag_tensor in all_subects:
+        plot_padded_panels(torch.select(mag_tensor, 3, 5), edge_len, pad_width=pad_width,
+                           label_cells=False,
+                           title=f"All cube faces, with padded areas shown outside hashes")
 
 
 if __name__ == '__main__':

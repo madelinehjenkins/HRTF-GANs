@@ -1,6 +1,9 @@
+import cmath
 import pickle
 
 import numpy as np
+import scipy
+import torch
 
 from barycentric_calcs import calc_barycentric_coordinates, calc_all_distances
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cartesian
@@ -19,7 +22,7 @@ def generate_euclidean_cube(measured_coords, filename, edge_len=24):
 
     euclidean_sphere_triangles = []
     euclidean_sphere_coeffs = []
-    for p in sphere_coords:
+    for count, p in enumerate(sphere_coords):
         if p[0] is not None:
             triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
                                                       sphere_coords=measured_coords)
@@ -29,6 +32,7 @@ def generate_euclidean_cube(measured_coords, filename, edge_len=24):
         else:
             euclidean_sphere_triangles.append(None)
             euclidean_sphere_coeffs.append(None)
+        print(f"Data point {count} out of {len(sphere_coords)} ({round(100 * count / len(sphere_coords))}%)")
 
     # save euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs
     with open(filename, "wb") as file:
@@ -105,14 +109,15 @@ def get_triangle_vertices(elevation, azimuth, sphere_coords):
     else:
         # failing that, examine all possible triangles
         # possible triangles is sorted from shortest total distance to longest total distance
-        possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        # possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        possible_triangles = get_possible_triangles(400, point_distances)
         for v0, v1, v2, _ in possible_triangles:
             triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
 
             # for each triangle, check if it encloses the point
             if triangle_encloses_point(elevation, azimuth, triangle_vertices):
                 selected_triangle_vertices = triangle_vertices
-                if v2 > 10:
+                if v2 > 300:
                     print(f'\nselected vertices for {round(elevation, 2), round(azimuth, 2)}: {v0, v1, v2}')
                     print(elevation, azimuth)
                     print(selected_triangle_vertices)
@@ -135,8 +140,7 @@ def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_fea
     return interpolated_feature
 
 
-def calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
-                                   euclidean_sphere_triangles, euclidean_sphere_coeffs):
+def calc_all_interpolated_features(cs, features, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs):
     selected_feature_interpolated = []
     for i, p in enumerate(euclidean_sphere):
         if p[0] is not None:
@@ -144,8 +148,192 @@ def calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere
                                                    coeffs=euclidean_sphere_coeffs[i],
                                                    all_coords=cs.get_all_coords(),
                                                    subject_features=features)
-            selected_feature_interpolated.append(features_p[feature_index])
+
+            selected_feature_interpolated.append(features_p)
         else:
             selected_feature_interpolated.append(None)
 
     return selected_feature_interpolated
+
+
+def calc_hrtf(hrirs):
+    magnitudes = []
+    phases = []
+    for hrir in hrirs:
+        hrtf = scipy.fft.fft(hrir)
+        magnitude = abs(hrtf)
+        phase = [cmath.phase(x) for x in hrtf]
+        magnitudes.append(magnitude)
+        phases.append(phase)
+
+    return magnitudes, phases
+
+
+def rows_to_cols(rows, edge_len, pad_width):
+    top_edge = []
+    for i in range(edge_len):
+        col = []
+        for j in range(pad_width):
+            col.append(rows[j][i])
+        top_edge.append(col)
+    return top_edge
+
+
+def cols_to_rows(cols, pad_width):
+    edge = []
+    for i in range(pad_width):
+        row = [x[i] for x in cols]
+        edge.append(row)
+    return edge
+
+
+def pad_column(column, pad_width):
+    padded = []
+    for col in column:
+        col_pad = pad_width * [col[0]] + col + pad_width * [col[-1]]
+        padded.append(col_pad)
+    return padded
+
+
+def create_edge_dict(magnitudes, pad_width):
+    panel_edges = []
+    for panel in range(5):
+        left = magnitudes[panel][:pad_width]  # get left column(s) (all lowest x)
+        right = magnitudes[panel][-pad_width:]  # get right column(s) (all highest x)
+        bottom = [x[:pad_width] for x in magnitudes[panel]]  # get bottom row(s) (all lowest y)
+        top = [x[-pad_width:] for x in magnitudes[panel]]  # get top row(s) (all highest y)
+        edge_dict = {'left': left, 'right': right, 'top': top, 'bottom': bottom}
+        panel_edges.append(edge_dict)
+    return panel_edges
+
+
+def pad_equatorial_panel(magnitudes_panel, panel, panel_edges, edge_len, pad_width):
+    # get row/column from panel 4 to pad top edge
+    if panel == 0:
+        # no need to reverse at all
+        top_edge = panel_edges[4]['bottom'].copy()
+    elif panel == 1:
+        # need to reverse in only one direction
+        top_edge = rows_to_cols(panel_edges[4]['right'].copy(), edge_len=edge_len, pad_width=pad_width)
+        top_edge = [list(reversed(col)) for col in top_edge]
+    elif panel == 2:
+        # need to reverse in both directions
+        top_edge = panel_edges[4]['top'].copy()
+        top_edge.reverse()
+        top_edge = [list(reversed(col)) for col in top_edge]
+    else:
+        # need to reverse in only one direction
+        top_edge = rows_to_cols(panel_edges[4]['left'].copy(), edge_len=edge_len, pad_width=pad_width)
+        top_edge.reverse()
+
+    # pad TOP AND BOTTOM of panel on a column by column basis
+    # pad bottom of column via replication
+    column_list = []
+    for i in range(edge_len):
+        column = magnitudes_panel[i]
+        col_pad = pad_width * [column[0]] + column + top_edge[i]
+        column_list.append(col_pad)
+
+    # pad LEFT AND RIGHT side of each panel around horizontal plane
+    # get panel index for left and right panel
+    left_panel = (panel - 1) % 4
+    right_panel = (panel + 1) % 4
+
+    # get the rightmost column of the left panel, and pad top and bottom with edge values
+    left_col = panel_edges[left_panel]['right']
+    left_col_pad = pad_column(left_col, pad_width)
+
+    # get the leftmost column of the right panel, and pad top and bottom with edge values
+    right_col = panel_edges[right_panel]['left']
+    right_col_pad = pad_column(right_col, pad_width)
+
+    # COMBINE left column, padded center columns, and right column to get final version
+    return left_col_pad + column_list + right_col_pad
+
+
+def pad_top_panel(magnitudes_top, panel_edges, edge_len, pad_width):
+    # pad TOP AND BOTTOM of panel on a column by column basis
+    column_list = []
+    bottom_edge = panel_edges[0]['top'].copy()
+    top_edge = panel_edges[2]['top'].copy()
+    top_edge.reverse()
+    top_edge = [list(reversed(col)) for col in top_edge]
+    for i in range(edge_len):
+        column = magnitudes_top[i]
+        col_pad = bottom_edge[i] + column + top_edge[i]
+        column_list.append(col_pad)
+
+    # get the top row of panel 3, reverse it, and pad top and bottom with edge values
+    left_col = panel_edges[3]['top'].copy()
+    left_col.reverse()
+    left_col_pad = pad_width * [left_col[0]] + left_col + pad_width * [left_col[-1]]
+
+    # get the top row of panel 1, and pad top and bottom with edge values
+    right_col = panel_edges[1]['top'].copy()
+    right_col_pad = pad_width * [right_col[0]] + right_col + pad_width * [right_col[-1]]
+    right_col_pad = [list(reversed(col)) for col in right_col_pad]
+
+    # convert from columns to rows
+    left_col_pad = cols_to_rows(left_col_pad, pad_width)
+    right_col_pad = cols_to_rows(right_col_pad, pad_width)
+
+    # COMBINE left column, padded center columns, and right column to get final version
+    return left_col_pad + column_list + right_col_pad
+
+
+def pad_cubed_sphere(magnitudes, pad_width):
+    edge_len = len(magnitudes[0])
+
+    # create a list of dictionaries (one for each panel) containing the left, right, top and bottom edges for each panel
+    panel_edges = create_edge_dict(magnitudes, pad_width)
+
+    # create empty list of lists of lists
+    magnitudes_pad = [[[[] for _ in range(edge_len + 2 * pad_width)] for _ in range(edge_len + 2 * pad_width)]
+                      for _ in range(5)]
+
+    # diagram of unfolded cube, with panel indices
+    #             _______
+    #            |       |
+    #            |   4   |
+    #     _______|_______|_______ _______
+    #    |       |       |       |       |
+    #    |   3   |   0   |   1   |   2   |
+    #    |_______|_______|_______|_______|
+    # In all cases, low values of x and y are situated in lower left of the unfolded sphere
+
+    # pad the 4 panels around the horizontal plane
+    for panel in range(4):
+        magnitudes_pad[panel] = pad_equatorial_panel(magnitudes[panel], panel, panel_edges, edge_len, pad_width)
+
+    # now pad for the top panel (panel 4)
+    magnitudes_pad[4] = pad_top_panel(magnitudes[4], panel_edges, edge_len, pad_width)
+
+    return magnitudes_pad
+
+
+def interpolate_fft_pad(cs, ds, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len, pad_width):
+    # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
+    # load_cube, all three lists share the same ordering
+    interpolated_hrirs = calc_all_interpolated_features(cs, ds['features'],
+                                                        load_sphere, load_sphere_triangles, load_sphere_coeffs)
+    magnitudes, phases = calc_hrtf(interpolated_hrirs)
+
+    # create empty list of lists of lists and initialize counter
+    magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
+    count = 0
+
+    for panel, x, y in load_cube:
+        # based on cube coordinates, get indices for magnitudes list of lists
+        i = panel - 1
+        j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+        k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+
+        # add to list of lists of lists and increment counter
+        magnitudes_raw[i][j][k] = magnitudes[count]
+        count += 1
+
+    # pad each panel of the cubed sphere appropriately
+    magnitudes_pad = pad_cubed_sphere(magnitudes_raw, pad_width)
+
+    # convert list of numpy arrays into a single array, such that converting into tensor is faster
+    return torch.tensor(np.array(magnitudes_pad))

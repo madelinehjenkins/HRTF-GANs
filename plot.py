@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import itertools
 
 import numpy as np
+import torch
+from matplotlib import patches
 from matplotlib.ticker import LinearLocator
 
 from convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian
@@ -135,3 +137,41 @@ def plot_original_features(cs, features, feature_index):
     plot_3d_shape("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
     plot_3d_shape("cube", cs.get_cube_coords(), shading=selected_feature_raw)
     plot_flat_cube(cs.get_cube_coords(), shading=selected_feature_raw)
+
+
+def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
+    # panel tensor must be of shape (5, n, n) where n = edge_len + padding
+    fig, axs = plt.subplots(2, 4, sharex='col', sharey='row', figsize=(9, 5))
+
+    plot_locs = [(1, 1), (1, 2), (1, 3), (1, 0), (0, 1)]
+    for panel in range(5):
+        row, col = plot_locs[panel]
+        plot_tensor = torch.flip(panel_tensors[panel].T, [0])
+        axs[row, col].imshow(plot_tensor, vmin=torch.min(panel_tensors), vmax=torch.max(panel_tensors))
+
+        # Create a Rectangle patch to outline panel and separate padded area
+        rect = patches.Rectangle((0.5 + (pad_width - 1), 0.5 + (pad_width - 1)), edge_len, edge_len,
+                                 linewidth=1, edgecolor='white', facecolor='none', hatch='/')
+        # Add the patch to the Axes
+        axs[row, col].add_patch(rect)
+
+        if label_cells:
+            for i in range(edge_len + 2*pad_width):
+                for j in range(edge_len + 2*pad_width):
+                    axs[row, col].text(j, i, round(1000*plot_tensor[i][j].item(), 1), ha="center", va="center", color="w")
+
+    axs[0, 0].axis('off')
+    axs[0, 2].axis('off')
+    axs[0, 3].axis('off')
+
+    # Show all ticks and label them with the respective list entries
+    axs[1, 0].set_xticks([])
+    axs[1, 1].set_xticks([])
+    axs[1, 2].set_xticks([])
+    axs[1, 3].set_xticks([])
+    axs[0, 1].set_yticks([])
+    axs[1, 0].set_yticks([])
+
+    fig.suptitle(title)
+    fig.tight_layout()
+    plt.show()
