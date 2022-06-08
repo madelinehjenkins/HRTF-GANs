@@ -7,6 +7,7 @@ import torch
 
 from barycentric_calcs import calc_barycentric_coordinates, calc_all_distances
 from convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cartesian
+from KalmanFilter import KalmanFilter as kf
 
 PI_4 = np.pi / 4
 
