@@ -19,58 +19,6 @@ def load_data(data_folder, load_function, domain, side):
                          group_spec={"subject": {}}, subject_ids="last")
 
 
-def remove_itd(hrir, pre_window, length):
-    # normalize such that max(abs(hrir)) == 1
-    rescaling_factor = 1 / max(np.abs(hrir))
-    normalized_hrir = rescaling_factor * hrir
-
-    # initialise Kalman filter
-    x = np.array([[0]])  # estimated initial state
-    p = np.array([[0]])  # estimated initial variance
-
-    h = np.array([[1]])  # observation model (observation represents internal state directly)
-
-    # r and q may require tuning
-    r = np.array([[np.sqrt(400)]])  # variance of the observation noise
-    q = np.array([[0.01]])  # variance of the process noise
-
-    hrir_filter = kf(x, p, h, q, r)
-    f = np.array([[1]])  # F is state transition model
-    for i, z in enumerate(normalized_hrir):
-        hrir_filter.prediction(f)
-        hrir_filter.update(z)
-        # find first time post fit residual exceeds some threshold
-        if np.abs(hrir_filter.get_post_fit_residual()) > 0.005:
-            over_threshold_index = i
-            break
-
-    # create fade window in order to taper off HRIR towards the beginning and end
-    fadeout_len = 50
-    fadeout_interval = -1. / fadeout_len
-    fadeout = np.arange(1 + fadeout_interval, fadeout_interval, fadeout_interval).tolist()
-
-    fadein_len = 10
-    fadein_interval = 1. / fadein_len
-    fadein = np.arange(0.0, 1.0, fadein_interval).tolist()
-
-    # trim HRIR based on first time threshold is exceeded
-    start = over_threshold_index - pre_window
-    stop = start + length
-
-    if len(hrir) >= stop:
-        trimmed_hrir = hrir[start:stop]
-        fade_window = fadein + [1] * (length - fadein_len - fadeout_len) + fadeout
-        faded_hrir = trimmed_hrir * fade_window
-    else:
-        trimmed_hrir = hrir[start:]
-        fade_window = fadein + [1] * (len(trimmed_hrir) - fadein_len - fadeout_len) + fadeout
-        faded_hrir = trimmed_hrir * fade_window
-        zero_pad = [0] * (length - len(trimmed_hrir))
-        faded_hrir = np.ma.append(faded_hrir, zero_pad)
-
-    return faded_hrir
-
-
 def main():
     ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='both')
     # need to use protected member to get this data, no getters
