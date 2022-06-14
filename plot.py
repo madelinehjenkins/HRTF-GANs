@@ -6,8 +6,8 @@ import torch
 from matplotlib import patches
 from matplotlib.ticker import LinearLocator
 
-from convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian
-from utils import calc_all_interpolated_features, get_feature_for_point
+from preprocessing.convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian
+from preprocessing.utils import calc_all_interpolated_features, get_feature_for_point
 
 PI_4 = np.pi / 4
 

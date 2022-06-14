@@ -47,7 +47,7 @@ def save_euclidean_cube(edge_len=24):
             for y in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
                 x_i, y_i = x + PI_4 / edge_len, y + PI_4 / edge_len
                 sphere_coords.append(convert_cube_to_sphere(panel, x_i, y_i))
-    with open('generated_coordinates.txt', 'w') as f:
+    with open('../projection_coordinates/generated_coordinates.txt', 'w') as f:
         for coord in sphere_coords:
             print(coord)
             f.write(str(coord[0]))
