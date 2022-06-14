@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pickle
 
 
 def make_nets(config, training=True):

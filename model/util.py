@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from torch import nn
 import tifffile
 
+
 # check for existing models and folders
 def check_existence(tag):
     """Checks if model exists, then asks for user input. Returns True for overwrite, False for load.
@@ -27,13 +28,13 @@ def check_existence(tag):
     if check_G or check_D:
         print(f'Models already exist for tag {tag}.')
         x = input("To overwrite existing model enter 'o', to load existing model enter 'l' or to cancel enter 'c'.\n")
-        if x=='o':
+        if x == 'o':
             print("Overwriting")
             return True
-        if x=='l':
+        if x == 'l':
             print("Loading previous model")
             return False
-        elif x=='c':
+        elif x == 'c':
             raise SystemExit
         else:
             raise AssertionError("Incorrect argument entered.")
@@ -44,6 +45,7 @@ def check_existence(tag):
 def initialise_folders(tag, overwrite):
     """[summary]
 
+    :param overwrite:
     :param tag: [description]
     :type tag: [type]
     """
@@ -56,6 +58,7 @@ def initialise_folders(tag, overwrite):
             os.mkdir(f'runs/{tag}')
         except:
             pass
+
 
 def wandb_init(name, offline):
     """[summary]
@@ -74,12 +77,12 @@ def wandb_init(name, offline):
     ENTITY = os.getenv('WANDB_ENTITY')
     PROJECT = os.getenv('WANDB_PROJECT')
     if API_KEY is None or ENTITY is None or PROJECT is None:
-        raise AssertionError('.env file arguments missing. Make sure WANDB_API_KEY, WANDB_ENTITY and WANDB_PROJECT are present.')
+        raise AssertionError(
+            '.env file arguments missing. Make sure WANDB_API_KEY, WANDB_ENTITY and WANDB_PROJECT are present.')
     print("Logging into W and B using API key {}".format(API_KEY))
     process = subprocess.run(["wandb", "login", API_KEY], capture_output=True)
     print("stderr:", process.stderr)
 
-    
     print('initing')
     wandb.init(entity=ENTITY, name=name, project=PROJECT, mode=mode)
 
@@ -99,23 +102,22 @@ def wandb_init(name, offline):
     # wandb.config.seed = wandb_config['seed']
     wandb.config.log_interval = wandb_config['log_interval']
 
+
 def wandb_save_models(fn):
     """[summary]
 
-    :param pth: [description]
-    :type pth: [type]
     :param fn: [description]
     :type fn: filename
     """
     shutil.copy(fn, os.path.join(wandb.run.dir, fn))
     wandb.save(fn)
 
+
 # training util
 def preprocess(data_path):
     """[summary]
 
-    :param imgs: [description]
-    :type imgs: [type]
+    :param data_path:
     :return: [description]
     :rtype: [type]
     """
@@ -128,6 +130,7 @@ def preprocess(data_path):
     for i, ph in enumerate(phases):
         img_oh[i][img == ph] = 1
     return img_oh, len(phases)
+
 
 def calc_gradient_penalty(netD, real_data, fake_data, batch_size, l, device, gp_lambda, nc):
     """[summary]
@@ -170,6 +173,7 @@ def calc_gradient_penalty(netD, real_data, fake_data, batch_size, l, device, gp_
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * gp_lambda
     return gradient_penalty
 
+
 def batch_real(img, l, bs):
     """[summary]
     :param training_imgs: [description]
@@ -181,8 +185,9 @@ def batch_real(img, l, bs):
     data = torch.zeros((bs, n_ph, l, l))
     for i in range(bs):
         x, y = torch.randint(x_max - l, (1,)), torch.randint(y_max - l, (1,))
-        data[i] = img[:, x:x+l, y:y+l]
+        data[i] = img[:, x:x + l, y:y + l]
     return data
+
 
 # Evaluation util
 def post_process(img):
@@ -198,6 +203,7 @@ def post_process(img):
 
     return img * 255
 
+
 def generate(c, netG):
     """Generate an instance from generator, save to .tif
 
@@ -210,11 +216,10 @@ def generate(c, netG):
     """
     tag, ngpu, nz, lf, pth = c.tag, c.ngpu, c.nz, c.lf, c.path
 
-
     out_pth = f"runs/{tag}/out.tif"
     if torch.cuda.device_count() > 1 and c.ngpu > 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
-    device = torch.device("cuda:0" if(
+    device = torch.device("cuda:0" if (
             torch.cuda.is_available() and ngpu > 0) else "cpu")
     if (ngpu > 1):
         netG = nn.DataParallel(netG, list(range(ngpu))).to(device)
@@ -226,6 +231,7 @@ def generate(c, netG):
     tif = np.array(gb[0], dtype=np.uint8)
     tifffile.imwrite(out_pth, tif, imagej=True)
     return tif
+
 
 def progress(i, iters, n, num_epochs, timed):
     """[summary]
@@ -244,6 +250,7 @@ def progress(i, iters, n, num_epochs, timed):
     progress = 'iteration {} of {}, epoch {} of {}'.format(
         i, iters, n, num_epochs)
     print(f"Progress: {progress}, Time per iter: {timed}")
+
 
 def plot_img(img, iter, epoch, path, offline=True):
     """[summary]
