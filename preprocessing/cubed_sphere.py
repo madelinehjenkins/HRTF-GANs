@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from convert_coordinates import convert_sphere_to_cube
+from preprocessing.convert_coordinates import convert_sphere_to_cube
 
 
 class CubedSphere(object):

@@ -1,3 +1,4 @@
+import argparse
 import pickle
 import torch
 from hrtfdata.torch.full import ARI
@@ -6,43 +7,56 @@ import numpy as np
 
 from preprocessing.cubed_sphere import CubedSphere
 from plot import plot_padded_panels
-from preprocessing.utils import interpolate_fft_pad
+from preprocessing.utils import interpolate_fft_pad, generate_euclidean_cube
 
 PI_4 = np.pi / 4
 
 
-def load_data(data_folder, load_function, domain, side):
+def load_data(data_folder, load_function, domain, side, subject_ids=None):
     base_dir = Path('/Users/madsjenkins/Imperial/HRTF/Volumes/home/HRTF Datasets')
+    if subject_ids:
+        return load_function(base_dir / data_folder,
+                             feature_spec={"hrirs": {'side': side, 'domain': domain}},
+                             target_spec={"side": {}},
+                             group_spec={"subject": {}}, subject_ids="last")
     return load_function(base_dir / data_folder,
                          feature_spec={"hrirs": {'side': side, 'domain': domain}},
                          target_spec={"side": {}},
-                         group_spec={"subject": {}}, subject_ids="last")
+                         group_spec={"subject": {}})
 
 
-def main():
-    ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='both')
-    # need to use protected member to get this data, no getters
-    cs = CubedSphere(sphere_coords=ds._selected_angles)
+def main(mode):
+    if mode == 'generate_projection':
+        ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left', subject_ids='first')
+        # need to use protected member to get this data, no getters
+        cs = CubedSphere(sphere_coords=ds._selected_angles)
+        generate_euclidean_cube(cs.get_sphere_coords(), "projection_coordinates/ARI_projection_16", edge_len=16)
 
-    # generate_euclidean_cube(cs.get_sphere_coords(), "projection_coordinates/ARI_projection_16", edge_len=16)
+    elif mode == 'preprocess':
+        ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='both')
+        # need to use protected member to get this data, no getters
+        cs = CubedSphere(sphere_coords=ds._selected_angles)
+        with open("projection_coordinates/ARI_projection_16", "rb") as file:
+            load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
 
-    with open("projection_coordinates/ARI_projection_16", "rb") as file:
-        load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
+        edge_len = 16
+        pad_width = 2
+        all_subects = []
+        for subject in range(len(ds)):
+            if subject % 10 == 0:
+                print(f"Subject {subject} out of {len(ds)} ({round(100 * subject / len(ds))}%)")
+            all_subects.append(interpolate_fft_pad(cs, ds[subject],
+                                                   load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
+                                                   edge_len, pad_width))
 
-    edge_len = 16
-    pad_width = 2
-    all_subects = []
-    for subject in range(len(ds)):
-        print(f"Subject {subject} out of {len(ds)} ({round(100 * subject / len(ds))}%)")
-        all_subects.append(interpolate_fft_pad(cs, ds[subject],
-                                               load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
-                                               edge_len, pad_width))
-
-    for mag_tensor in all_subects:
-        plot_padded_panels(torch.select(mag_tensor, 3, 5), edge_len, pad_width=pad_width,
-                           label_cells=False,
-                           title=f"All cube faces, with padded areas shown outside hashes")
+        # save all_subjects
+        with open("projected_data/ARI_processed_data", "wb") as file:
+            pickle.dump(all_subects, file)
 
 
 if __name__ == '__main__':
-    main()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("mode")
+    # args = parser.parse_args()
+    # main(args.mode)
+    main('preprocess')
