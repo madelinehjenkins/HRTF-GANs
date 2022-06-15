@@ -12,6 +12,18 @@ from preprocessing.KalmanFilter import KalmanFilter as kf
 PI_4 = np.pi / 4
 
 
+def load_data(data_folder, load_function, domain, side, subject_ids=None):
+    if subject_ids:
+        return load_function(data_folder,
+                             feature_spec={"hrirs": {'side': side, 'domain': domain}},
+                             target_spec={"side": {}},
+                             group_spec={"subject": {}}, subject_ids="last")
+    return load_function(data_folder,
+                         feature_spec={"hrirs": {'side': side, 'domain': domain}},
+                         target_spec={"side": {}},
+                         group_spec={"subject": {}})
+
+
 def generate_euclidean_cube(measured_coords, filename, edge_len=24):
     cube_coords, sphere_coords = [], []
     for panel in range(1, 6):
