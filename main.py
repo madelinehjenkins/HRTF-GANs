@@ -73,9 +73,9 @@ def main(mode, tag):
         train_prefetcher, valid_prefetcher = load_dataset(config)
         print("Loaded all datasets successfully.")
 
-        # overwrite = util.check_existence(tag)
-        # util.initialise_folders(tag, overwrite)
-        # train(config, train_prefetcher, overwrite=overwrite)
+        overwrite = util.check_existence(tag)
+        util.initialise_folders(tag, overwrite)
+        train(config, train_prefetcher, overwrite=overwrite)
 
 
 if __name__ == '__main__':

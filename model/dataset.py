@@ -33,16 +33,16 @@ class TrainValidHRTFDataset(Dataset):
         with open(self.hrtf_file_names[batch_index], "rb") as file:
             hrtf = pickle.load(file)
 
+        # TODO: using hrtf[0] is a temporary measure to use only a single panel of the cubed sphere
+        hrtf = hrtf[0]
         # hrtf processing operations
-        hr_hrtf = imgproc.center_crop(hrtf, self.hrtf_size)
-        lr_hrtf = imgproc.image_resize(hr_hrtf, 1 / self.upscale_factor)
+        # TODO: consider cropping hrtf to remove padding, or adding padding downstream
+        # permute such that channels come first, and unsqueeze so first dimension is mini-batch (1)
+        hr_hrtf = torch.unsqueeze(torch.permute(hrtf, (2, 0, 1)), 0)
+        # downsample hrtf
+        lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
 
-        # Convert hrtf data into Tensor stream format (PyTorch).
-        # Note: The range of input and output is between [0, 1]
-        lr_tensor = imgproc.image2tensor(lr_hrtf, range_norm=False, half=False)
-        hr_tensor = imgproc.image2tensor(hr_hrtf, range_norm=False, half=False)
-
-        return {"lr": lr_tensor, "hr": hr_tensor}
+        return {"lr": lr_hrtf, "hr": hr_hrtf}
 
     def __len__(self) -> int:
         return len(self.hrtf_file_names)
