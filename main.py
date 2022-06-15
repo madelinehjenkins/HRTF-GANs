@@ -5,9 +5,12 @@ from hrtfdata.torch.full import ARI
 from pathlib import Path
 import numpy as np
 
+from model.config import Config
+from model.train import train
 from preprocessing.cubed_sphere import CubedSphere
 from plot import plot_padded_panels
 from preprocessing.utils import interpolate_fft_pad, generate_euclidean_cube
+from model import util, model
 
 PI_4 = np.pi / 4
 
