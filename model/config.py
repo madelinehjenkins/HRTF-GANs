@@ -20,7 +20,7 @@ class Config:
         self.l = 64
         self.n_phases = 2
         # Training hyperparams
-        self.batch_size = 64
+        self.batch_size = 32
         self.num_workers = 4
         # betas for Adam optimizer
         self.beta1 = 0.9

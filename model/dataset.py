@@ -42,6 +42,10 @@ class TrainValidHRTFDataset(Dataset):
         # downsample hrtf
         lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
 
+        # squeeze to remove mini-batch dimension
+        hr_hrtf = torch.squeeze(hr_hrtf)
+        lr_hrtf = torch.squeeze(lr_hrtf)
+
         return {"lr": lr_hrtf, "hr": hr_hrtf}
 
     def __len__(self) -> int:

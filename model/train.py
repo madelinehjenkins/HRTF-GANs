@@ -65,9 +65,11 @@ def train(config, train_prefetcher, overwrite=True):
             else:
                 start_overall = time.time()
 
+            print(f"batch data lr shape: {batch_data['lr'].shape}")
+            print(f"batch data hr shape: {batch_data['hr'].shape}")
             # Transfer in-memory data to CUDA devices to speed up training
-            lr = batch_data["lr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
-            hr = batch_data["hr"].to(device=config.device, memory_format=torch.channels_last, non_blocking=True)
+            lr = batch_data["lr"].to(device=device, memory_format=torch.contiguous_format, non_blocking=True)
+            hr = batch_data["hr"].to(device=device, memory_format=torch.contiguous_format, non_blocking=True)
 
             # Discriminator Training
             # Initialize the discriminator model gradients

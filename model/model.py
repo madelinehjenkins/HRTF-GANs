@@ -115,7 +115,7 @@ class Generator(nn.Module):
         # Upscale block
         upsampling = []
         for _ in range(2):
-            upsampling.append(UpsampleBlock(64))
+            upsampling.append(UpsampleBlock(1024))
         self.upsampling = nn.Sequential(*upsampling)
 
         # Output layer.
