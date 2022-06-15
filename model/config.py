@@ -1,7 +1,7 @@
 import json
 
 
-class Config():
+class Config:
     """Config class
     """
     def __init__(self, tag):
@@ -13,9 +13,10 @@ class Config():
         self.n_phases = 2
         # Training hyperparams
         self.batch_size = 64
+        # betas for Adam optimizer
         self.beta1 = 0.9
         self.beta2 = 0.999
-        self.num_epochs = 250
+        self.num_epochs = 5 # was originally 250
         self.iters = 1000
         self.lrg = 0.0001
         self.lr = 0.0001
@@ -32,13 +33,6 @@ class Config():
         # Architecture
         self.lays = 4
         self.laysd = 5
-        # kernel sizes
-        self.dk, self.gk = [4]*self.laysd, [4]*self.lays
-        self.ds, self.gs = [2]*self.laysd, [2]*self.lays
-        self.df, self.gf = [self.n_phases, 64, 128, 256, 512, 1], [
-            self.nz, 512, 256, 128, self.n_phases]
-        self.dp = [1, 1, 1, 1, 0]
-        self.gp = [1, 1, 1, 1, 1]
 
     def save(self):
         j = {}
