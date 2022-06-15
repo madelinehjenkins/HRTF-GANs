@@ -79,7 +79,7 @@ def train(config, train_prefetcher, overwrite=True):
             # Calculate the classification score of the discriminator model for real samples
             hr_output = netD(hr).mean()
 
-            # train on SR images
+            # train on SR hrtfs
             sr_output = netD(sr.detach()).mean()
 
             # Compute the discriminator loss and backprop

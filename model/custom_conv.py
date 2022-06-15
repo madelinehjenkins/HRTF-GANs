@@ -203,7 +203,7 @@ class CubeSphereConv2D(_ConvNd):
           and the second `int` for the width dimension
 
     Args:
-        in_channels (int): Number of channels in the input image
+        in_channels (int): Number of channels in the input hrtf
         out_channels (int): Number of channels produced by the convolution
         kernel_size (int or tuple): Size of the convolving kernel
         stride (int or tuple, optional): Stride of the convolution. Default: 1
