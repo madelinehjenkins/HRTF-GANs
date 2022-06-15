@@ -28,7 +28,7 @@ def load_data(data_folder, load_function, domain, side, subject_ids=None):
                          group_spec={"subject": {}})
 
 
-def main(mode):
+def main(mode, tag):
     if mode == 'generate_projection':
         ds: ARI = load_data(data_folder='ARI', load_function=ARI, domain='time', side='left', subject_ids='first')
         # need to use protected member to get this data, no getters
@@ -56,10 +56,26 @@ def main(mode):
         with open("projected_data/ARI_processed_data", "wb") as file:
             pickle.dump(all_subects, file)
 
+    elif mode == 'train':
+        with open("projected_data/ARI_processed_data", "rb") as file:
+            all_subects = pickle.load(file)
+
+
+        # Initialise Config object
+        config = Config(tag)
+        overwrite = util.check_existence(tag)
+        util.initialise_folders(tag, overwrite)
+        train(config, prefetcher, overwrite=overwrite)
+
 
 if __name__ == '__main__':
     # parser = argparse.ArgumentParser()
     # parser.add_argument("mode")
+    # parser.add_argument("-t", "--tag")
     # args = parser.parse_args()
-    # main(args.mode)
-    main('preprocess')
+    # if args.tag:
+    #     tag = args.tag
+    # else:
+    #     tag = 'test'
+    # main(args.mode, tag)
+    main('train', 'test')
