@@ -1,4 +1,48 @@
+import os
+import pickle
+import imgproc
 import torch
+from torch.utils.data import Dataset
+
+
+class TrainValidHRTFDataset(Dataset):
+    """Define training/valid dataset loading methods.
+    Args:
+        hrtf_dir (str): Train/Valid dataset address.
+        hrtf_size (int): High resolution hrtf size.
+        upscale_factor (int): hrtf up scale factor.
+        mode (str): Data set loading method, the training data set is for data enhancement, and the verification data set is not for data enhancement.
+    """
+
+    def __init__(self, hrtf_dir: str, hrtf_size: int, upscale_factor: int, mode: str) -> None:
+        super(TrainValidHRTFDataset, self).__init__()
+        # Get all hrtf file names in folder
+        self.hrtf_file_names = [os.path.join(hrtf_dir, hrtf_file_name) for hrtf_file_name in os.listdir(hrtf_dir)]
+        # Specify the high-resolution hrtf size, with equal length and width
+        self.hrtf_size = hrtf_size
+        # How many times the high-resolution hrtf is the low-resolution hrtf
+        self.upscale_factor = upscale_factor
+        # Load training dataset or test dataset
+        self.mode = mode
+
+    def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
+        # Read a batch of hrtf data
+        with open(self.hrtf_file_names[batch_index], "rb") as file:
+            hrtf = pickle.load(file)
+
+        # hrtf processing operations
+        hr_hrtf = imgproc.center_crop(hrtf, self.hrtf_size)
+        lr_hrtf = imgproc.image_resize(hr_hrtf, 1 / self.upscale_factor)
+
+        # Convert hrtf data into Tensor stream format (PyTorch).
+        # Note: The range of input and output is between [0, 1]
+        lr_tensor = imgproc.image2tensor(lr_hrtf, range_norm=False, half=False)
+        hr_tensor = imgproc.image2tensor(hr_hrtf, range_norm=False, half=False)
+
+        return {"lr": lr_tensor, "hr": hr_tensor}
+
+    def __len__(self) -> int:
+        return len(self.hrtf_file_names)
 
 
 class CUDAPrefetcher:

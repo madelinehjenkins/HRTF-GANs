@@ -9,6 +9,11 @@ import tifffile
 
 
 # check for existing models and folders
+from torch.utils.data import DataLoader
+
+from model.dataset import CUDAPrefetcher, TrainValidHRTFDataset
+
+
 def check_existence(tag):
     """Checks if model exists, then asks for user input. Returns True for overwrite, False for load.
 
@@ -57,12 +62,14 @@ def initialise_folders(tag, overwrite):
             pass
 
 
-def load_dataset() -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
+def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
+    device = torch.device(config.device_name if(
+        torch.cuda.is_available() and config.ngpu > 0) else "cpu")
     # Load train, test and valid datasets
-    train_datasets = TrainValidImageDataset(config.train_image_dir, config.image_size, config.upscale_factor, "Train")
-    valid_datasets = TrainValidImageDataset(config.valid_image_dir, config.image_size, config.upscale_factor, "Valid")
-    test_datasets = TestImageDataset(config.test_lr_image_dir, config.test_hr_image_dir)
+    train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train")
+    valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, "Valid")
+    # test_datasets = TestHRTFDataset(config.test_lr_hrtf_dir, config.test_hr_hrtf_dir)
 
     # Generator all dataloader
     train_dataloader = DataLoader(train_datasets,
