@@ -282,7 +282,12 @@ def pad_top_panel(magnitudes_top, panel_edges, edge_len, pad_width):
     return left_col_pad + column_list + right_col_pad
 
 
-def pad_cubed_sphere(magnitudes, pad_width):
+def pad_cubed_sphere(magnitudes: list, pad_width: int):
+    """Add padding to each of the 5 faces of the cubed sphere, based on values from the adjacent face
+
+    :param magnitudes: A list of panels, where each element of the list represents one panel of the cube sphere
+    :param pad_width: How much padding to add on each side of each panel
+    """
     edge_len = len(magnitudes[0])
 
     # create a list of dictionaries (one for each panel) containing the left, right, top and bottom edges for each panel
