@@ -86,62 +86,20 @@ def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
                                   pin_memory=True,
                                   drop_last=False,
                                   persistent_workers=True)
-    test_dataloader = DataLoader(test_datasets,
-                                 batch_size=1,
-                                 shuffle=False,
-                                 num_workers=1,
-                                 pin_memory=True,
-                                 drop_last=False,
-                                 persistent_workers=True)
+    # test_dataloader = DataLoader(test_datasets,
+    #                              batch_size=1,
+    #                              shuffle=False,
+    #                              num_workers=1,
+    #                              pin_memory=True,
+    #                              drop_last=False,
+    #                              persistent_workers=True)
 
     # Place all data on the preprocessing data loader
-    train_prefetcher = CUDAPrefetcher(train_dataloader, config.device)
-    valid_prefetcher = CUDAPrefetcher(valid_dataloader, config.device)
-    test_prefetcher = CUDAPrefetcher(test_dataloader, config.device)
+    train_prefetcher = CUDAPrefetcher(train_dataloader, device)
+    valid_prefetcher = CUDAPrefetcher(valid_dataloader, device)
+    # test_prefetcher = CUDAPrefetcher(test_dataloader, device)
 
-    return train_prefetcher, valid_prefetcher, test_prefetcher
-
-
-def calc_gradient_penalty(netD, real_data, fake_data, batch_size, l, device, gp_lambda, nc):
-    """[summary]
-
-    :param netD: [description]
-    :type netD: [type]
-    :param real_data: [description]
-    :type real_data: [type]
-    :param fake_data: [description]
-    :type fake_data: [type]
-    :param batch_size: [description]
-    :type batch_size: [type]
-    :param l: [description]
-    :type l: [type]
-    :param device: [description]
-    :type device: [type]
-    :param gp_lambda: [description]
-    :type gp_lambda: [type]
-    :param nc: [description]
-    :type nc: [type]
-    :return: [description]
-    :rtype: [type]
-    """
-    alpha = torch.rand(batch_size, 1)
-    alpha = alpha.expand(batch_size, int(
-        real_data.nelement() / batch_size)).contiguous()
-    alpha = alpha.view(batch_size, nc, l, l)
-    alpha = alpha.to(device)
-
-    interpolates = alpha * real_data.detach() + ((1 - alpha) * fake_data.detach())
-    interpolates = interpolates.to(device)
-    interpolates.requires_grad_(True)
-    disc_interpolates = netD(interpolates)
-    gradients = autograd.grad(outputs=disc_interpolates, inputs=interpolates,
-                              grad_outputs=torch.ones(
-                                  disc_interpolates.size()).to(device),
-                              create_graph=True, only_inputs=True)[0]
-
-    gradients = gradients.view(gradients.size(0), -1)
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * gp_lambda
-    return gradient_penalty
+    return train_prefetcher, valid_prefetcher #, test_prefetcher
 
 
 def batch_real(img, l, bs):
@@ -157,50 +115,6 @@ def batch_real(img, l, bs):
         x, y = torch.randint(x_max - l, (1,)), torch.randint(y_max - l, (1,))
         data[i] = img[:, x:x + l, y:y + l]
     return data
-
-
-# Evaluation util
-def post_process(img):
-    """Turns a n phase image (bs, n, imsize, imsize) into a plottable euler image (bs, 3, imsize, imsize, imsize)
-
-    :param img: a tensor of the n phase img
-    :type img: torch.Tensor
-    :return:
-    :rtype:
-    """
-    img = img.detach().cpu()
-    img = torch.argmax(img, dim=1).unsqueeze(-1).numpy()
-
-    return img * 255
-
-
-def generate(c, netG):
-    """Generate an instance from generator, save to .tif
-
-    :param c: Config object class
-    :type c: Config
-    :param netG: Generator instance
-    :type netG: Generator
-    :return: Post-processed generated instance
-    :rtype: torch.Tensor
-    """
-    tag, ngpu, nz, lf, pth = c.tag, c.ngpu, c.nz, c.lf, c.path
-
-    out_pth = f"runs/{tag}/out.tif"
-    if torch.cuda.device_count() > 1 and c.ngpu > 1:
-        print("Using", torch.cuda.device_count(), "GPUs!")
-    device = torch.device("cuda:0" if (
-            torch.cuda.is_available() and ngpu > 0) else "cpu")
-    if (ngpu > 1):
-        netG = nn.DataParallel(netG, list(range(ngpu))).to(device)
-    netG.load_state_dict(torch.load(f"{pth}/Gen.pt"))
-    netG.eval()
-    noise = torch.randn(1, nz, lf, lf)
-    raw = netG(noise)
-    gb = post_process(raw)
-    tif = np.array(gb[0], dtype=np.uint8)
-    tifffile.imwrite(out_pth, tif, imagej=True)
-    return tif
 
 
 def progress(i, iters, n, num_epochs, timed):
@@ -221,20 +135,3 @@ def progress(i, iters, n, num_epochs, timed):
         i, iters, n, num_epochs)
     print(f"Progress: {progress}, Time per iter: {timed}")
 
-
-def plot_img(img, iter, epoch, path, offline=True):
-    """[summary]
-
-    :param img: [description]
-    :type img: [type]
-    :param slcs: [description], defaults to 4
-    :type slcs: int, optional
-    """
-    img = post_process(img)
-    if not offline:
-        wandb.log({"slices": [wandb.Image(i) for i in img]})
-    else:
-        fig, axs = plt.subplots(1, img.shape[0])
-        for ax, im in zip(axs, img):
-            ax.imshow(im)
-        plt.savefig(f'{path}/{epoch}_{iter}_slices.png')
