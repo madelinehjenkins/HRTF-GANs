@@ -32,8 +32,7 @@ def train(config, train_prefetcher, overwrite=True):
     cudnn.benchmark = True
 
     # Get train params
-    l, batch_size, beta1, beta2, num_epochs, lr_gen, lr_dis, Lambda, critic_iters, lz, nz, = \
-        config.get_train_params()
+    batch_size, beta1, beta2, num_epochs, lr_gen, lr_dis, critic_iters = config.get_train_params()
 
     # Define Generator network and transfer to CUDA
     netG = Generator().to(device)
