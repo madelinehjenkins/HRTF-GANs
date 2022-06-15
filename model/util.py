@@ -57,76 +57,42 @@ def initialise_folders(tag, overwrite):
             pass
 
 
-def wandb_init(name, offline):
-    """[summary]
+def load_dataset() -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
+    """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
+    # Load train, test and valid datasets
+    train_datasets = TrainValidImageDataset(config.train_image_dir, config.image_size, config.upscale_factor, "Train")
+    valid_datasets = TrainValidImageDataset(config.valid_image_dir, config.image_size, config.upscale_factor, "Valid")
+    test_datasets = TestImageDataset(config.test_lr_image_dir, config.test_hr_image_dir)
 
-    :param name: [description]
-    :type name: [type]
-    :param offline: [description]
-    :type offline: [type]
-    """
-    if offline:
-        mode = 'disabled'
-    else:
-        mode = None
-    load_dotenv(os.path.join(os.getcwd(), '.env'))
-    API_KEY = os.getenv('WANDB_API_KEY')
-    ENTITY = os.getenv('WANDB_ENTITY')
-    PROJECT = os.getenv('WANDB_PROJECT')
-    if API_KEY is None or ENTITY is None or PROJECT is None:
-        raise AssertionError(
-            '.env file arguments missing. Make sure WANDB_API_KEY, WANDB_ENTITY and WANDB_PROJECT are present.')
-    print("Logging into W and B using API key {}".format(API_KEY))
-    process = subprocess.run(["wandb", "login", API_KEY], capture_output=True)
-    print("stderr:", process.stderr)
+    # Generator all dataloader
+    train_dataloader = DataLoader(train_datasets,
+                                  batch_size=config.batch_size,
+                                  shuffle=True,
+                                  num_workers=config.num_workers,
+                                  pin_memory=True,
+                                  drop_last=True,
+                                  persistent_workers=True)
+    valid_dataloader = DataLoader(valid_datasets,
+                                  batch_size=1,
+                                  shuffle=False,
+                                  num_workers=1,
+                                  pin_memory=True,
+                                  drop_last=False,
+                                  persistent_workers=True)
+    test_dataloader = DataLoader(test_datasets,
+                                 batch_size=1,
+                                 shuffle=False,
+                                 num_workers=1,
+                                 pin_memory=True,
+                                 drop_last=False,
+                                 persistent_workers=True)
 
-    print('initing')
-    wandb.init(entity=ENTITY, name=name, project=PROJECT, mode=mode)
+    # Place all data on the preprocessing data loader
+    train_prefetcher = CUDAPrefetcher(train_dataloader, config.device)
+    valid_prefetcher = CUDAPrefetcher(valid_dataloader, config.device)
+    test_prefetcher = CUDAPrefetcher(test_dataloader, config.device)
 
-    wandb_config = {
-        'active': True,
-        'api_key': API_KEY,
-        'entity': ENTITY,
-        'project': PROJECT,
-        # 'watch_called': False,
-        'no_cuda': False,
-        # 'seed': 42,
-        'log_interval': 1000,
-
-    }
-    # wandb.watch_called = wandb_config['watch_called']
-    wandb.config.no_cuda = wandb_config['no_cuda']
-    # wandb.config.seed = wandb_config['seed']
-    wandb.config.log_interval = wandb_config['log_interval']
-
-
-def wandb_save_models(fn):
-    """[summary]
-
-    :param fn: [description]
-    :type fn: filename
-    """
-    shutil.copy(fn, os.path.join(wandb.run.dir, fn))
-    wandb.save(fn)
-
-
-# training util
-def preprocess(data_path):
-    """[summary]
-
-    :param data_path:
-    :return: [description]
-    :rtype: [type]
-    """
-    img = plt.imread(data_path)[:, :, 0]
-    phases = np.unique(img)
-    if len(phases) > 10:
-        raise AssertionError('Image not one hot encoded.')
-    x, y = img.shape
-    img_oh = torch.zeros(len(phases), x, y)
-    for i, ph in enumerate(phases):
-        img_oh[i][img == ph] = 1
-    return img_oh, len(phases)
+    return train_prefetcher, valid_prefetcher, test_prefetcher
 
 
 def calc_gradient_penalty(netD, real_data, fake_data, batch_size, l, device, gp_lambda, nc):
