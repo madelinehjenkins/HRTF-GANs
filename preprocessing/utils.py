@@ -35,16 +35,13 @@ def generate_euclidean_cube(measured_coords, filename, edge_len=24):
 
     euclidean_sphere_triangles = []
     euclidean_sphere_coeffs = []
+
     for count, p in enumerate(sphere_coords):
-        if p[0] is not None:
-            triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1],
-                                                      sphere_coords=measured_coords)
-            coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
-            euclidean_sphere_triangles.append(triangle_vertices)
-            euclidean_sphere_coeffs.append(coeffs)
-        else:
-            euclidean_sphere_triangles.append(None)
-            euclidean_sphere_coeffs.append(None)
+        triangle_vertices = get_triangle_vertices(elevation=p[0], azimuth=p[1], sphere_coords=measured_coords)
+        coeffs = calc_barycentric_coordinates(elevation=p[0], azimuth=p[1], closest_points=triangle_vertices)
+        euclidean_sphere_triangles.append(triangle_vertices)
+        euclidean_sphere_coeffs.append(coeffs)
+
         print(f"Data point {count} out of {len(sphere_coords)} ({round(100 * count / len(sphere_coords))}%)")
 
     # save euclidean_cube, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs
