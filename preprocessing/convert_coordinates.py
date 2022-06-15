@@ -62,11 +62,16 @@ def convert_cube_to_sphere(panel, x, y):
         azimuth = x + offset
         elevation = np.arctan(np.tan(y) * np.cos(x))
     elif panel == 5:
-        azimuth = np.arctan(-np.tan(x) / np.tan(y))
-        elevation = np.arctan(np.sin(azimuth) / np.tan(x))
-        if elevation < 0:
-            elevation *= -1
-            azimuth += np.pi
+        # if tan(x) is 0, handle as a special case
+        if np.tan(x) == 0:
+            azimuth = np.arctan(0)
+            elevation = np.pi/2
+        else:
+            azimuth = np.arctan(-np.tan(x) / np.tan(y))
+            elevation = np.arctan(np.sin(azimuth) / np.tan(x))
+            if elevation < 0:
+                elevation *= -1
+                azimuth += np.pi
     # not including panel 6 for now, as it is being excluded from this data
     elif panel == 6:
         pass
