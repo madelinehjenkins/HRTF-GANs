@@ -120,7 +120,7 @@ def batch_real(img, l, bs):
     return data
 
 
-def progress(i, iters, n, num_epochs, timed):
+def progress(i, batches, n, num_epochs, timed):
     """[summary]
 
     :param i: [description]
@@ -134,7 +134,7 @@ def progress(i, iters, n, num_epochs, timed):
     :param timed: [description]
     :type timed: [type]
     """
-    progress = 'iteration {} of {}, epoch {} of {}'.format(
-        i, iters, n, num_epochs)
+    progress = 'batch {} of {}, epoch {} of {}'.format(
+        i, batches, n, num_epochs)
     print(f"Progress: {progress}, Time per iter: {timed}")
 

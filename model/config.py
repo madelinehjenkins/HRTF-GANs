@@ -25,8 +25,7 @@ class Config:
         # betas for Adam optimizer
         self.beta1 = 0.9
         self.beta2 = 0.999
-        self.num_epochs = 5 # was originally 250
-        self.iters = 1000
+        self.num_epochs = 2 # was originally 250
         self.lr_gen = 0.0001
         self.lr_dis = 0.0001
         self.Lambda = 10

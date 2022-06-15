@@ -78,9 +78,9 @@ class Discriminator(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(512 * 4 * 4, 1024),
+            nn.Linear(512 * 2 * 2, 512),
             nn.LeakyReLU(0.2, True),
-            nn.Linear(1024, 1),
+            nn.Linear(512, 1),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -19,6 +19,8 @@ def train(config, train_prefetcher, overwrite=True):
     :param offline: [description], defaults to True
     :type offline: bool, optional
     """
+    # Calculate how many batches of data are in each Epoch
+    batches = len(train_prefetcher)
 
     # Assign torch device
     ngpu = config.ngpu
@@ -30,7 +32,7 @@ def train(config, train_prefetcher, overwrite=True):
     cudnn.benchmark = True
 
     # Get train params
-    l, batch_size, beta1, beta2, num_epochs, iters, lr_gen, lr_dis, Lambda, critic_iters, lz, nz, = \
+    l, batch_size, beta1, beta2, num_epochs, lr_gen, lr_dis, Lambda, critic_iters, lz, nz, = \
         config.get_train_params()
 
     # Define Generator network and transfer to CUDA
@@ -65,8 +67,6 @@ def train(config, train_prefetcher, overwrite=True):
             else:
                 start_overall = time.time()
 
-            print(f"batch data lr shape: {batch_data['lr'].shape}")
-            print(f"batch data hr shape: {batch_data['hr'].shape}")
             # Transfer in-memory data to CUDA devices to speed up training
             lr = batch_data["lr"].to(device=device, memory_format=torch.contiguous_format, non_blocking=True)
             hr = batch_data["hr"].to(device=device, memory_format=torch.contiguous_format, non_blocking=True)
@@ -109,12 +109,12 @@ def train(config, train_prefetcher, overwrite=True):
                 end_overall = time.time()
                 times.append(end_overall - start_overall)
 
-            # Every 50 iters log useful metrics
-            if batch_index % 50 == 0:
+            # Every 5 batches log useful metrics
+            if batch_index % 5 == 0:
                 with torch.no_grad():
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
-                    progress(batch_index, iters, epoch, num_epochs,
+                    progress(batch_index, batches, epoch, num_epochs,
                              timed=np.mean(times))
                     times = []
 
