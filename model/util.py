@@ -1,28 +1,19 @@
-import numpy as np
 import torch
-from torch import autograd
-import wandb
 import os
-import matplotlib.pyplot as plt
-from torch import nn
-import tifffile
 
 
 # check for existing models and folders
 from torch.utils.data import DataLoader
-
 from model.dataset import CUDAPrefetcher, TrainValidHRTFDataset, CPUPrefetcher
 
 
 def check_existence(tag):
     """Checks if model exists, then asks for user input. Returns True for overwrite, False for load.
 
-    :param tag: [description]
-    :type tag: [type]
-    :raises SystemExit: [description]
-    :raises AssertionError: [description]
+    :param tag: label to use for run
+    :raises SystemExit: Raises if user cancels overwrite
+    :raises AssertionError: Raises if user provides invalid input
     :return: True for overwrite, False for load
-    :rtype: [type]
     """
     root = f'runs/{tag}'
     check_D = os.path.exists(f'{root}/Disc.pt')
@@ -43,13 +34,11 @@ def check_existence(tag):
     return True
 
 
-# set-up util
 def initialise_folders(tag, overwrite):
-    """[summary]
+    """Set up folders for given tag
 
-    :param overwrite:
-    :param tag: [description]
-    :type tag: [type]
+    :param tag: label to use for run
+    :param overwrite: whether to overwrite existing model outputs
     """
     if overwrite:
         try:
@@ -105,36 +94,15 @@ def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     return train_prefetcher, valid_prefetcher #, test_prefetcher
 
 
-def batch_real(img, l, bs):
-    """[summary]
-    :param training_imgs: [description]
-    :type training_imgs: [type]
-    :return: [description]
-    :rtype: [type]
-    """
-    n_ph, x_max, y_max = img.shape
-    data = torch.zeros((bs, n_ph, l, l))
-    for i in range(bs):
-        x, y = torch.randint(x_max - l, (1,)), torch.randint(y_max - l, (1,))
-        data[i] = img[:, x:x + l, y:y + l]
-    return data
-
-
 def progress(i, batches, n, num_epochs, timed):
-    """[summary]
+    """Prints progress to console
 
-    :param i: [description]
-    :type i: [type]
-    :param iters: [description]
-    :type iters: [type]
-    :param n: [description]
-    :type n: [type]
-    :param num_epochs: [description]
-    :type num_epochs: [type]
-    :param timed: [description]
-    :type timed: [type]
+    :param i: Batch index
+    :param batches: total number of batches
+    :param n: Epoch number
+    :param num_epochs: Total number of epochs
+    :param timed: Time per batch
     """
-    progress = 'batch {} of {}, epoch {} of {}'.format(
-        i, batches, n, num_epochs)
+    progress = 'batch {} of {}, epoch {} of {}'.format(i, batches, n, num_epochs)
     print(f"Progress: {progress}, Time per iter: {timed}")
 

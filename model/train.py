@@ -11,13 +11,11 @@ import time
 
 
 def train(config, train_prefetcher, overwrite=True):
-    """[summary]
+    """ Train the generator and discriminator models
 
-    :param overwrite:
-    :param config: [description]
-    :type config: [type]
-    :param offline: [description], defaults to True
-    :type offline: bool, optional
+    :param config: Config object containing model hyperparameters
+    :param train_prefetcher: prefetcher for training data
+    :param overwrite: whether to overwrite existing model outputs
     """
     # Calculate how many batches of data are in each Epoch
     batches = len(train_prefetcher)
