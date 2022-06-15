@@ -7,12 +7,17 @@ import numpy as np
 
 from model.config import Config
 from model.train import train
+from model.util import load_dataset
 from preprocessing.cubed_sphere import CubedSphere
 from plot import plot_padded_panels
 from preprocessing.utils import interpolate_fft_pad, generate_euclidean_cube
 from model import util, model
 
 PI_4 = np.pi / 4
+
+# Random seed to maintain reproducible results
+torch.manual_seed(0)
+np.random.seed(0)
 
 
 def load_data(data_folder, load_function, domain, side, subject_ids=None):
@@ -40,32 +45,37 @@ def main(mode, tag):
         # need to use protected member to get this data, no getters
         cs = CubedSphere(sphere_coords=ds._selected_angles)
         with open("projection_coordinates/ARI_projection_16", "rb") as file:
-            load_cube, load_sphere, load_sphere_triangles, load_sphere_coeffs = pickle.load(file)
+            cube, sphere, sphere_triangles, sphere_coeffs = pickle.load(file)
 
         edge_len = 16
         pad_width = 2
-        all_subects = []
-        for subject in range(len(ds)):
-            if subject % 10 == 0:
-                print(f"Subject {subject} out of {len(ds)} ({round(100 * subject / len(ds))}%)")
-            all_subects.append(interpolate_fft_pad(cs, ds[subject],
-                                                   load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube,
-                                                   edge_len, pad_width))
+        train_samples_ratio = 0.8
+        train_sample = np.random.choice(ds.subject_ids, int(len(ds.subject_ids) * train_samples_ratio))
+        for i in range(len(ds)):
+            if i % 10 == 0:
+                print(f"HRTF {i} out of {len(ds)} ({round(100 * i / len(ds))}%)")
+            clean_hrtf = interpolate_fft_pad(cs, ds[i]['features'], sphere, sphere_triangles, sphere_coeffs, cube,
+                                             edge_len, pad_width)
+            # save cleaned hrtfdata
+            if ds[i]['group'] in train_sample:
+                data_dir = "projected_data/train/"
+            else:
+                data_dir = "projected_data/valid/"
 
-        # save all_subjects
-        with open("projected_data/ARI_processed_data", "wb") as file:
-            pickle.dump(all_subects, file)
+            subject_id = str(ds[i]['group'])
+            side = ds[i]['target']
+            with open(data_dir + "ARI_" + subject_id + side, "wb") as file:
+                pickle.dump(clean_hrtf, file)
 
     elif mode == 'train':
-        with open("projected_data/ARI_processed_data", "rb") as file:
-            all_subects = pickle.load(file)
-
-
         # Initialise Config object
         config = Config(tag)
-        overwrite = util.check_existence(tag)
-        util.initialise_folders(tag, overwrite)
-        train(config, prefetcher, overwrite=overwrite)
+        train_prefetcher, valid_prefetcher = load_dataset(config)
+        print("Loaded all datasets successfully.")
+
+        # overwrite = util.check_existence(tag)
+        # util.initialise_folders(tag, overwrite)
+        # train(config, train_prefetcher, overwrite=overwrite)
 
 
 if __name__ == '__main__':

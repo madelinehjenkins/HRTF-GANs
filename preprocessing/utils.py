@@ -312,10 +312,10 @@ def pad_cubed_sphere(magnitudes, pad_width):
     return magnitudes_pad
 
 
-def interpolate_fft_pad(cs, ds, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len, pad_width):
+def interpolate_fft_pad(cs, features, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len, pad_width):
     # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
     # load_cube, all three lists share the same ordering
-    interpolated_hrirs = calc_all_interpolated_features(cs, ds['features'],
+    interpolated_hrirs = calc_all_interpolated_features(cs, features,
                                                         load_sphere, load_sphere_triangles, load_sphere_coeffs)
     magnitudes, phases = calc_hrtf(interpolated_hrirs)
 

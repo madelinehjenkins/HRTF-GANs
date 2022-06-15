@@ -5,6 +5,9 @@ import torch
 from torch.utils.data import Dataset
 
 
+# based on https://github.com/Lornatang/SRGAN-PyTorch/blob/7292452634137d8f5d4478e44727ec1166a89125/dataset.py
+
+
 class TrainValidHRTFDataset(Dataset):
     """Define training/valid dataset loading methods.
     Args:
@@ -43,6 +46,29 @@ class TrainValidHRTFDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.hrtf_file_names)
+
+
+class CPUPrefetcher:
+    """Use the CPU side to accelerate data reading.
+    Args:
+        dataloader (DataLoader): Data loader. Combines a dataset and a sampler, and provides an iterable over the given dataset.
+    """
+
+    def __init__(self, dataloader) -> None:
+        self.original_dataloader = dataloader
+        self.data = iter(dataloader)
+
+    def next(self):
+        try:
+            return next(self.data)
+        except StopIteration:
+            return None
+
+    def reset(self):
+        self.data = iter(self.original_dataloader)
+
+    def __len__(self) -> int:
+        return len(self.original_dataloader)
 
 
 class CUDAPrefetcher:

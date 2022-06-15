@@ -11,7 +11,7 @@ import tifffile
 # check for existing models and folders
 from torch.utils.data import DataLoader
 
-from model.dataset import CUDAPrefetcher, TrainValidHRTFDataset
+from model.dataset import CUDAPrefetcher, TrainValidHRTFDataset, CPUPrefetcher
 
 
 def check_existence(tag):
@@ -64,8 +64,6 @@ def initialise_folders(tag, overwrite):
 
 def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
-    device = torch.device(config.device_name if(
-        torch.cuda.is_available() and config.ngpu > 0) else "cpu")
     # Load train, test and valid datasets
     train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train")
     valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, "Valid")
@@ -95,9 +93,14 @@ def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     #                              persistent_workers=True)
 
     # Place all data on the preprocessing data loader
-    train_prefetcher = CUDAPrefetcher(train_dataloader, device)
-    valid_prefetcher = CUDAPrefetcher(valid_dataloader, device)
-    # test_prefetcher = CUDAPrefetcher(test_dataloader, device)
+    if torch.cuda.is_available() and config.ngpu > 0:
+        device = torch.device(config.device_name)
+        train_prefetcher = CUDAPrefetcher(train_dataloader, device)
+        valid_prefetcher = CUDAPrefetcher(valid_dataloader, device)
+        # test_prefetcher = CUDAPrefetcher(test_dataloader, device)
+    else:
+        train_prefetcher = CPUPrefetcher(train_dataloader)
+        valid_prefetcher = CPUPrefetcher(valid_dataloader)
 
     return train_prefetcher, valid_prefetcher #, test_prefetcher
 
