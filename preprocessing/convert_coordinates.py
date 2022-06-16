@@ -4,10 +4,16 @@ PI_4 = np.pi / 4
 
 
 def calc_offset(quadrant):
+    """Based on sphere quadrant, calculate the offset that is used with the azimuth"""
     return ((quadrant - 1) / 2) * np.pi
 
 
 def calc_panel(elevation, azimuth):
+    """Based on the elevation and azimuth of a point on a sphere, determine which panel it would fall in on a cubed
+    sphere
+
+    Note that in this function, the panels are numbered 1 through 5 to be consistent with existing literature,
+    however later in the data processing the panels are zero-indexed for convenience """
     # use the azimuth to determine the quadrant of the sphere
     if azimuth < np.pi / 4:
         quadrant = 1
@@ -20,19 +26,22 @@ def calc_panel(elevation, azimuth):
 
     offset = calc_offset(quadrant)
     threshold_val = np.tan(elevation) / np.cos(azimuth - offset)
+
     # when close to the horizontal plane, must be panels 1 through 4 (inclusive)
     if -1 <= threshold_val < 1:
-        return quadrant
+        panel = quadrant
     # above a certain elevation, in panel 5
     elif threshold_val >= 1:
-        return 5
+        panel = 5
     # below a certain elevation, in panel 6
-    elif threshold_val < -1:
-        return 6
+    else:
+        panel = 6
+
+    return panel
 
 
-# used for obtaining cubed sphere coordinates from a pair of spherical coordinates
 def convert_sphere_to_cube(elevation, azimuth):
+    """used for obtaining corresponding cubed sphere coordinates from a pair of spherical coordinates"""
     if elevation is None or azimuth is None:
         # if this position was not measured in the sphere, keep as np.nan in cube
         panel, x, y = np.nan, np.nan, np.nan
@@ -49,14 +58,14 @@ def convert_sphere_to_cube(elevation, azimuth):
         elif panel == 5:
             x = np.arctan(np.sin(azimuth) / np.tan(elevation))
             y = np.arctan(-np.cos(azimuth) / np.tan(elevation))
-        elif panel == 6:
+        else:
             x = np.arctan(-np.sin(azimuth) / np.tan(elevation))
             y = np.arctan(-np.cos(azimuth) / np.tan(elevation))
     return panel, x, y
 
 
-# used for obtaining spherical coordinates from cubed sphere coordinates
 def convert_cube_to_sphere(panel, x, y):
+    """used for obtaining spherical coordinates from corresponding cubed sphere coordinates"""
     if panel <= 4:
         offset = calc_offset(panel)
         azimuth = x + offset
@@ -86,6 +95,8 @@ def convert_cube_to_sphere(panel, x, y):
 
 
 def convert_sphere_to_cartesian(coordinates):
+    """For a list of spherical coordinates of the form (elevation, azimuth), convert to (x, y, z) cartesian
+    coordinates for plotting purposes """
     x, y, z = [], [], []
     mask = []
 
@@ -107,6 +118,8 @@ def convert_sphere_to_cartesian(coordinates):
 
 
 def convert_cube_to_cartesian(coordinates):
+    """For a list of cube sphere coordinates of the form (panel, x, y), convert to (x, y, z) cartesian
+    coordinates for plotting purposes """
     x, y, z = [], [], []
     mask = []
 
