@@ -55,13 +55,13 @@ def main(mode, tag, using_hpc):
                                              config.hrtf_size, config.pad_width)
             # save cleaned hrtfdata
             if ds[i]['group'] in train_sample:
-                data_dir = "projected_data/train/"
+                projected_dir = "projected_data/train/"
             else:
-                data_dir = "projected_data/valid/"
+                projected_dir = "projected_data/valid/"
 
             subject_id = str(ds[i]['group'])
             side = ds[i]['target']
-            with open(data_dir + "ARI_" + subject_id + side, "wb") as file:
+            with open(projected_dir + "ARI_" + subject_id + side, "wb") as file:
                 pickle.dump(clean_hrtf, file)
 
     elif mode == 'train':
