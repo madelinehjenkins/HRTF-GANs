@@ -3,6 +3,7 @@ import numpy as np
 
 
 class KalmanFilter:
+    """Repurposed from https://github.com/ahogg/hogg2019-icassp-paper/blob/master/KalmanFilter.py by Aidan Hogg"""
 
     def __init__(self, x, P, H, Q, R):
         self.x = x  # estimated state
