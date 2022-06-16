@@ -25,7 +25,10 @@ def main(mode, tag, using_hpc):
     data_dir = config.raw_hrtf_dir / 'ARI'
     print(os.getcwd())
     print(data_dir)
+
     projection_filename = "projection_coordinates/ARI_projection_" + str(config.hrtf_size)
+    if using_hpc:
+        projection_filename = "HRTF-GANs/" + projection_filename
 
     if mode == 'generate_projection':
         # Must be run in this mode once per dataset, finds barycentric coordinates for each point in the cubed sphere
@@ -58,6 +61,9 @@ def main(mode, tag, using_hpc):
                 projected_dir = "projected_data/train/"
             else:
                 projected_dir = "projected_data/valid/"
+
+            if using_hpc:
+                projected_dir = "HRTF-GANs/" + projected_dir
 
             subject_id = str(ds[i]['group'])
             side = ds[i]['target']

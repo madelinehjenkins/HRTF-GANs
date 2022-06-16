@@ -133,6 +133,7 @@ def plot_ir_subplots(hrir1, hrir2, title1="", title2="", suptitle=""):
 
 def plot_interpolated_features(cs, features, i, euclidean_cube, euclidean_sphere, sphere_triangles, sphere_coeffs):
     """Plot i-th interpolated feature on flatted cubed sphere, 3D cubed sphere, & 3D sphere"""
+    # TODO: test this function to ensure I have not broken it
 
     interpolated = calc_all_interpolated_features(cs, features, euclidean_sphere, sphere_triangles, sphere_coeffs)
 
