@@ -2,8 +2,11 @@ import numpy as np
 
 
 def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
-    # adapted from CalculateDistance_HaversineFomrula in the 3DTune-In toolkit
-    # https://github.com/3DTune-In/3dti_AudioToolkit/blob/master/3dti_Toolkit/BinauralSpatializer/HRTF.cpp#L1052
+    """Calculates the haversine distance between two points on a sphere
+
+    adapted from CalculateDistance_HaversineFormula in the 3DTune-In toolkit
+    https://github.com/3DTune-In/3dti_AudioToolkit/blob/master/3dti_Toolkit/BinauralSpatializer/HRTF.cpp#L1052
+    """
     increment_azimuth = azimuth1 - azimuth2
     increment_elevation = elevation1 - elevation2
     sin2_inc_elev = np.sin(increment_elevation / 2) ** 2
@@ -17,19 +20,25 @@ def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
 
 
 def calc_spherical_excess(elevation1, azimuth1, elevation2, azimuth2, elevation3, azimuth3):
+    """Calculates the spherical excess of a spherical triangle based on the position of the triangle's vertices"""
     dist12 = calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2)
     dist13 = calc_dist_haversine(elevation1, azimuth1, elevation3, azimuth3)
     dist23 = calc_dist_haversine(elevation2, azimuth2, elevation3, azimuth3)
-    semiperim = 0.5 * (dist12 + dist13 + dist23)
-    inner = np.tan(0.5 * semiperim) * \
-            np.tan(0.5 * (semiperim - dist12)) * \
-            np.tan(0.5 * (semiperim - dist13)) * \
-            np.tan(0.5 * (semiperim - dist23))
+    semiperimeter = 0.5 * (dist12 + dist13 + dist23)
+    inner = (np.tan(0.5 * semiperimeter) *
+             np.tan(0.5 * (semiperimeter - dist12)) *
+             np.tan(0.5 * (semiperimeter - dist13)) *
+             np.tan(0.5 * (semiperimeter - dist23)))
     excess = 4 * np.arctan(np.sqrt(inner))
     return excess
 
 
 def calc_all_distances(elevation, azimuth, sphere_coords):
+    """Calculates the distances from a given point to every measurement point on the sphere
+
+    Returns a list of tuples of the form (elevation, azimuth, distance) which provides the location and distance of
+    every measurement point in the sphere, sorted from the closest point to the farthest point
+    """
     distances = []
     for elev, azi in sphere_coords:
         if elev is not None and azi is not None:
@@ -41,8 +50,8 @@ def calc_all_distances(elevation, azimuth, sphere_coords):
     return sorted(distances, key=lambda x: x[2])
 
 
-# get alpha, beta, and gamma coeffs for barycentric interpolation (modified for spherical triangle
 def calc_barycentric_coordinates(elevation, azimuth, closest_points):
+    """Calculate alpha, beta, and gamma coefficients for barycentric interpolation (modified for spherical triangle)"""
     # not zero indexing var names in order to match equations in 3D Tune-In Toolkit paper
     elev1, elev2, elev3 = closest_points[0][0], closest_points[1][0], closest_points[2][0]
     azi1, azi2, azi3 = closest_points[0][1], closest_points[1][1], closest_points[2][1]

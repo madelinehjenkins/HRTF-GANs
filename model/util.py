@@ -1,7 +1,6 @@
 import torch
 import os
 
-
 # check for existing models and folders
 from torch.utils.data import DataLoader
 from model.dataset import CUDAPrefetcher, TrainValidHRTFDataset, CPUPrefetcher
@@ -56,6 +55,7 @@ def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     # Load train, test and valid datasets
     train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train")
     valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, "Valid")
+    # TODO: set up test datasets
     # test_datasets = TestHRTFDataset(config.test_lr_hrtf_dir, config.test_hr_hrtf_dir)
 
     # Generator all dataloader
@@ -91,7 +91,7 @@ def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
         train_prefetcher = CPUPrefetcher(train_dataloader)
         valid_prefetcher = CPUPrefetcher(valid_dataloader)
 
-    return train_prefetcher, valid_prefetcher #, test_prefetcher
+    return train_prefetcher, valid_prefetcher  # , test_prefetcher
 
 
 def progress(i, batches, n, num_epochs, timed):
@@ -103,6 +103,5 @@ def progress(i, batches, n, num_epochs, timed):
     :param num_epochs: Total number of epochs
     :param timed: Time per batch
     """
-    progress = 'batch {} of {}, epoch {} of {}'.format(i, batches, n, num_epochs)
-    print(f"Progress: {progress}, Time per iter: {timed}")
-
+    message = 'batch {} of {}, epoch {} of {}'.format(i, batches, n, num_epochs)
+    print(f"Progress: {message}, Time per iter: {timed}")
