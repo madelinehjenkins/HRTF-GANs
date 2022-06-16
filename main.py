@@ -76,12 +76,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("mode")
     parser.add_argument("-t", "--tag")
-    parser.add_argument("-h", "--hpc")
+    parser.add_argument("-c", "--hpc")
     args = parser.parse_args()
+
+    if args.hpc == "True":
+        hpc = True
+    elif args.hpc == "False":
+        hpc = False
+    else:
+        raise RuntimeError("Please enter 'True' or 'False' for the hpc tag (-c/--hpc)")
+
     if args.tag:
         tag = args.tag
     else:
         tag = 'test'
-    main(args.mode, tag, args.hpc)
+    main(args.mode, tag, hpc)
 
     # main('train', 'test', using_hpc=False)
