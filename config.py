@@ -13,7 +13,7 @@ class Config:
 
         # data dirs
         if using_hpc:
-            self.raw_hrtf_dir = Path('../project/sonicom/live/HRTF Datasets')
+            self.raw_hrtf_dir = Path('../projects/sonicom/live/HRTF Datasets')
         else:
             self.raw_hrtf_dir = Path('/Users/madsjenkins/Imperial/HRTF/Volumes/home/HRTF Datasets')
         self.train_hrtf_dir = 'projected_data/train'
