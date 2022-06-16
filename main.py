@@ -1,4 +1,5 @@
 import argparse
+import os
 import pickle
 import torch
 from hrtfdata.torch.full import ARI
@@ -22,6 +23,8 @@ def main(mode, tag, using_hpc):
     # Initialise Config object
     config = Config(tag, using_hpc=using_hpc)
     data_dir = config.raw_hrtf_dir / 'ARI'
+    print(os.getcwd())
+    print(data_dir)
     projection_filename = "projection_coordinates/ARI_projection_" + str(config.hrtf_size)
 
     if mode == 'generate_projection':
