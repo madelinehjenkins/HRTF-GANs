@@ -5,26 +5,30 @@ import numpy as np
 import scipy
 import torch
 
-from preprocessing.barycentric_calcs import calc_barycentric_coordinates, calc_all_distances
-from preprocessing.convert_coordinates import convert_cube_to_sphere, convert_sphere_to_cartesian
-from preprocessing.KalmanFilter import KalmanFilter as kf
+from preprocessing.barycentric_calcs import calc_barycentric_coordinates, get_triangle_vertices
+from preprocessing.convert_coordinates import convert_cube_to_sphere
+from preprocessing.KalmanFilter import KalmanFilter
+from preprocessing.padding import pad_cubed_sphere
 
 PI_4 = np.pi / 4
 
 
 def load_data(data_folder, load_function, domain, side, subject_ids=None):
+    """Wrapper for the data loading functions from the hrtfdata package"""
     if subject_ids:
         return load_function(data_folder,
                              feature_spec={"hrirs": {'side': side, 'domain': domain}},
                              target_spec={"side": {}},
-                             group_spec={"subject": {}}, subject_ids="last")
+                             group_spec={"subject": {}}, subject_ids=subject_ids)
     return load_function(data_folder,
                          feature_spec={"hrirs": {'side': side, 'domain': domain}},
                          target_spec={"side": {}},
                          group_spec={"subject": {}})
 
 
-def generate_euclidean_cube(measured_coords, filename, edge_len=24):
+def generate_euclidean_cube(measured_coords, filename, edge_len=16):
+    """Calculate barycentric coordinates for projection based on a specified cube sphere edge length and a set of
+    measured coordinates, finally save them to the file"""
     cube_coords, sphere_coords = [], []
     for panel in range(1, 6):
         for x in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
@@ -49,7 +53,8 @@ def generate_euclidean_cube(measured_coords, filename, edge_len=24):
         pickle.dump((cube_coords, sphere_coords, euclidean_sphere_triangles, euclidean_sphere_coeffs), file)
 
 
-def save_euclidean_cube(edge_len=24):
+def save_euclidean_cube(edge_len=16):
+    """Save euclidean cube as a txt file for use as input to matlab"""
     sphere_coords = []
     for panel in range(1, 6):
         for x in np.linspace(-PI_4, PI_4, edge_len, endpoint=False):
@@ -66,75 +71,16 @@ def save_euclidean_cube(edge_len=24):
 
 
 def get_feature_for_point(elevation, azimuth, all_coords, subject_features):
+    """For a given point (elevation, azimuth), get the associated feature value"""
     all_coords_row = all_coords.query(f'elevation == {elevation} & azimuth == {azimuth}')
     azimuth_index = int(all_coords_row.azimuth_index)
     elevation_index = int(all_coords_row.elevation_index)
     return subject_features[azimuth_index][elevation_index]
 
 
-def get_possible_triangles(max_vertex_index, point_distances):
-    possible_triangles = []
-    for v0 in range(max_vertex_index - 1):
-        for v1 in range(v0 + 1, max_vertex_index):
-            for v2 in range(v1 + 1, max_vertex_index + 1):
-                total_dist = point_distances[v0][2] + point_distances[v1][2] + point_distances[v2][2]
-                possible_triangles.append((v0, v1, v2, total_dist))
-
-    return sorted(possible_triangles, key=lambda x: x[3])
-
-
-def triangle_encloses_point(elevation, azimuth, triangle_coordinates):
-    # convert point of interest to cartesian coordinates and add to array
-    x, y, z, _ = convert_sphere_to_cartesian([[elevation, azimuth]])
-    point = np.array([x, y, z])
-    # convert triangle coordinates to cartesian and add to array
-    x_triangle, y_triangle, z_triangle, _ = convert_sphere_to_cartesian(triangle_coordinates)
-    triangle_points = np.array([x_triangle, y_triangle, z_triangle])
-
-    # check if matrix is singular
-    if np.linalg.matrix_rank(triangle_points) < 3:
-        return False
-
-    # solve system of equations
-    solution = np.linalg.solve(triangle_points, point)
-
-    # this checks that a point lies in a spherical triangle by checking that the vector formed from the center of the
-    # sphere to the point of interest intersects the plane formed by the triangle's vertices
-    # check that constraints are satisfied
-    solution_sum = np.sum(solution)
-    solution_lambda = 1. / solution_sum
-
-    return solution_lambda > 0 and np.all(solution > 0)
-
-
-def get_triangle_vertices(elevation, azimuth, sphere_coords):
-    # get distances from point of interest to every other point
-    point_distances = calc_all_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
-
-    # first try triangle formed by closest points
-    triangle_vertices = [point_distances[0][:2], point_distances[1][:2], point_distances[2][:2]]
-    if triangle_encloses_point(elevation, azimuth, triangle_vertices):
-        selected_triangle_vertices = triangle_vertices
-    else:
-        # failing that, examine all possible triangles
-        # possible triangles is sorted from shortest total distance to longest total distance
-        # possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
-        possible_triangles = get_possible_triangles(500, point_distances)
-        for v0, v1, v2, _ in possible_triangles:
-            triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
-
-            # for each triangle, check if it encloses the point
-            if triangle_encloses_point(elevation, azimuth, triangle_vertices):
-                selected_triangle_vertices = triangle_vertices
-                break
-        else:
-            raise RuntimeError(f"No enclosing triangle found for elevation {elevation}, azimuth {azimuth}.")
-
-    # if no triangles enclose the point, this will return none
-    return selected_triangle_vertices
-
-
 def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_features):
+    """Calculate the interpolated feature for a given point based on vertices specified by triangle_vertices, features
+    specified by subject_features, and barycentric coefficients specified by coeffs"""
     # get features for each of the three closest points, add to a list in order of closest to farthest
     features = []
     for p in triangle_vertices:
@@ -148,6 +94,8 @@ def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_fea
 
 
 def calc_all_interpolated_features(cs, features, euclidean_sphere, euclidean_sphere_triangles, euclidean_sphere_coeffs):
+    """Essentially a wrapper function for calc_interpolated_features above, calculated interpolated features for all
+    points on the euclidean sphere rather than a single point"""
     selected_feature_interpolated = []
     for i, p in enumerate(euclidean_sphere):
         if p[0] is not None:
@@ -164,6 +112,7 @@ def calc_all_interpolated_features(cs, features, euclidean_sphere, euclidean_sph
 
 
 def calc_hrtf(hrirs):
+    """FFT to obtain HRTF from HRIR"""
     magnitudes = []
     phases = []
     for hrir in hrirs:
@@ -176,154 +125,9 @@ def calc_hrtf(hrirs):
     return magnitudes, phases
 
 
-def rows_to_cols(rows, edge_len, pad_width):
-    top_edge = []
-    for i in range(edge_len):
-        col = []
-        for j in range(pad_width):
-            col.append(rows[j][i])
-        top_edge.append(col)
-    return top_edge
-
-
-def cols_to_rows(cols, pad_width):
-    edge = []
-    for i in range(pad_width):
-        row = [x[i] for x in cols]
-        edge.append(row)
-    return edge
-
-
-def pad_column(column, pad_width):
-    padded = []
-    for col in column:
-        col_pad = pad_width * [col[0]] + col + pad_width * [col[-1]]
-        padded.append(col_pad)
-    return padded
-
-
-def create_edge_dict(magnitudes, pad_width):
-    panel_edges = []
-    for panel in range(5):
-        left = magnitudes[panel][:pad_width]  # get left column(s) (all lowest x)
-        right = magnitudes[panel][-pad_width:]  # get right column(s) (all highest x)
-        bottom = [x[:pad_width] for x in magnitudes[panel]]  # get bottom row(s) (all lowest y)
-        top = [x[-pad_width:] for x in magnitudes[panel]]  # get top row(s) (all highest y)
-        edge_dict = {'left': left, 'right': right, 'top': top, 'bottom': bottom}
-        panel_edges.append(edge_dict)
-    return panel_edges
-
-
-def pad_equatorial_panel(magnitudes_panel, panel, panel_edges, edge_len, pad_width):
-    # get row/column from panel 4 to pad top edge
-    if panel == 0:
-        # no need to reverse at all
-        top_edge = panel_edges[4]['bottom'].copy()
-    elif panel == 1:
-        # need to reverse in only one direction
-        top_edge = rows_to_cols(panel_edges[4]['right'].copy(), edge_len=edge_len, pad_width=pad_width)
-        top_edge = [list(reversed(col)) for col in top_edge]
-    elif panel == 2:
-        # need to reverse in both directions
-        top_edge = panel_edges[4]['top'].copy()
-        top_edge.reverse()
-        top_edge = [list(reversed(col)) for col in top_edge]
-    else:
-        # need to reverse in only one direction
-        top_edge = rows_to_cols(panel_edges[4]['left'].copy(), edge_len=edge_len, pad_width=pad_width)
-        top_edge.reverse()
-
-    # pad TOP AND BOTTOM of panel on a column by column basis
-    # pad bottom of column via replication
-    column_list = []
-    for i in range(edge_len):
-        column = magnitudes_panel[i]
-        col_pad = pad_width * [column[0]] + column + top_edge[i]
-        column_list.append(col_pad)
-
-    # pad LEFT AND RIGHT side of each panel around horizontal plane
-    # get panel index for left and right panel
-    left_panel = (panel - 1) % 4
-    right_panel = (panel + 1) % 4
-
-    # get the rightmost column of the left panel, and pad top and bottom with edge values
-    left_col = panel_edges[left_panel]['right']
-    left_col_pad = pad_column(left_col, pad_width)
-
-    # get the leftmost column of the right panel, and pad top and bottom with edge values
-    right_col = panel_edges[right_panel]['left']
-    right_col_pad = pad_column(right_col, pad_width)
-
-    # COMBINE left column, padded center columns, and right column to get final version
-    return left_col_pad + column_list + right_col_pad
-
-
-def pad_top_panel(magnitudes_top, panel_edges, edge_len, pad_width):
-    # pad TOP AND BOTTOM of panel on a column by column basis
-    column_list = []
-    bottom_edge = panel_edges[0]['top'].copy()
-    top_edge = panel_edges[2]['top'].copy()
-    top_edge.reverse()
-    top_edge = [list(reversed(col)) for col in top_edge]
-    for i in range(edge_len):
-        column = magnitudes_top[i]
-        col_pad = bottom_edge[i] + column + top_edge[i]
-        column_list.append(col_pad)
-
-    # get the top row of panel 3, reverse it, and pad top and bottom with edge values
-    left_col = panel_edges[3]['top'].copy()
-    left_col.reverse()
-    left_col_pad = pad_width * [left_col[0]] + left_col + pad_width * [left_col[-1]]
-
-    # get the top row of panel 1, and pad top and bottom with edge values
-    right_col = panel_edges[1]['top'].copy()
-    right_col_pad = pad_width * [right_col[0]] + right_col + pad_width * [right_col[-1]]
-    right_col_pad = [list(reversed(col)) for col in right_col_pad]
-
-    # convert from columns to rows
-    left_col_pad = cols_to_rows(left_col_pad, pad_width)
-    right_col_pad = cols_to_rows(right_col_pad, pad_width)
-
-    # COMBINE left column, padded center columns, and right column to get final version
-    return left_col_pad + column_list + right_col_pad
-
-
-def pad_cubed_sphere(magnitudes: list, pad_width: int):
-    """Add padding to each of the 5 faces of the cubed sphere, based on values from the adjacent face
-
-    :param magnitudes: A list of panels, where each element of the list represents one panel of the cube sphere
-    :param pad_width: How much padding to add on each side of each panel
-    """
-    edge_len = len(magnitudes[0])
-
-    # create a list of dictionaries (one for each panel) containing the left, right, top and bottom edges for each panel
-    panel_edges = create_edge_dict(magnitudes, pad_width)
-
-    # create empty list of lists of lists
-    magnitudes_pad = [[[[] for _ in range(edge_len + 2 * pad_width)] for _ in range(edge_len + 2 * pad_width)]
-                      for _ in range(5)]
-
-    # diagram of unfolded cube, with panel indices
-    #             _______
-    #            |       |
-    #            |   4   |
-    #     _______|_______|_______ _______
-    #    |       |       |       |       |
-    #    |   3   |   0   |   1   |   2   |
-    #    |_______|_______|_______|_______|
-    # In all cases, low values of x and y are situated in lower left of the unfolded sphere
-
-    # pad the 4 panels around the horizontal plane
-    for panel in range(4):
-        magnitudes_pad[panel] = pad_equatorial_panel(magnitudes[panel], panel, panel_edges, edge_len, pad_width)
-
-    # now pad for the top panel (panel 4)
-    magnitudes_pad[4] = pad_top_panel(magnitudes[4], panel_edges, edge_len, pad_width)
-
-    return magnitudes_pad
-
-
-def interpolate_fft_pad(cs, features, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len, pad_width):
+def interpolate_fft_pad(cs, features, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len,
+                        pad_width):
+    """Combine all data processing steps into one function"""
     # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
     # load_cube, all three lists share the same ordering
     interpolated_hrirs = calc_all_interpolated_features(cs, features,
@@ -352,6 +156,7 @@ def interpolate_fft_pad(cs, features, load_sphere, load_sphere_triangles, load_s
 
 
 def remove_itd(hrir, pre_window, length):
+    """Remove ITD from HRIR using kalman filter"""
     # normalize such that max(abs(hrir)) == 1
     rescaling_factor = 1 / max(np.abs(hrir))
     normalized_hrir = rescaling_factor * hrir
@@ -366,7 +171,7 @@ def remove_itd(hrir, pre_window, length):
     r = np.array([[np.sqrt(400)]])  # variance of the observation noise
     q = np.array([[0.01]])  # variance of the process noise
 
-    hrir_filter = kf(x, p, h, q, r)
+    hrir_filter = KalmanFilter(x, p, h, q, r)
     f = np.array([[1]])  # F is state transition model
     for i, z in enumerate(normalized_hrir):
         hrir_filter.prediction(f)
@@ -375,6 +180,8 @@ def remove_itd(hrir, pre_window, length):
         if np.abs(hrir_filter.get_post_fit_residual()) > 0.005:
             over_threshold_index = i
             break
+    else:
+        raise RuntimeError("Kalman Filter did not find a time where post fit residual exceeded threshold.")
 
     # create fade window in order to taper off HRIR towards the beginning and end
     fadeout_len = 50
