@@ -46,8 +46,13 @@ def train(config, train_prefetcher, overwrite=True):
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
         netD.load_state_dict(torch.load(f"{path}/Disc.pt"))
 
+    train_losses_G = []
+    train_losses_D = []
+
     for epoch in range(num_epochs):
         times = []
+        train_loss_D = 0.
+        train_loss_G = 0.
 
         # Initialize the number of data batches to print logs on the terminal
         batch_index = 0
@@ -83,6 +88,7 @@ def train(config, train_prefetcher, overwrite=True):
 
             # Compute the discriminator loss and backprop
             disc_cost = sr_output - hr_output
+            train_loss_D += disc_cost
             disc_cost.backward()
 
             optD.step()
@@ -93,6 +99,7 @@ def train(config, train_prefetcher, overwrite=True):
                 netG.zero_grad()
                 # Calculate adversarial loss
                 output = -netD(sr).mean()
+                train_loss_G += output
 
                 # Calculate loss for G and backprop
                 output.backward()
@@ -121,5 +128,9 @@ def train(config, train_prefetcher, overwrite=True):
             # After training a batch of data, add 1 to the number of data batches to ensure that the
             # terminal print data normally
             batch_index += 1
+
+        train_losses_D.append(train_loss_D / len(train_prefetcher))
+        train_losses_G.append(train_loss_G / len(train_prefetcher))
+        print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
 
     print("TRAINING FINISHED")
