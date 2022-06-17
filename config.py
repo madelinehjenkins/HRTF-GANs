@@ -12,12 +12,14 @@ class Config:
         self.path = f'runs/{self.tag}'
 
         # data dirs
+        self.train_hrtf_dir = 'projected_data/train'
+        self.valid_hrtf_dir = 'projected_data/valid'
         if using_hpc:
+            self.train_hrtf_dir = "HRTF-GANs/" + self.train_hrtf_dir
+            self.valid_hrtf_dir = "HRTF-GANs/" + self.valid_hrtf_dir
             self.raw_hrtf_dir = Path('../projects/sonicom/live/HRTF Datasets')
         else:
             self.raw_hrtf_dir = Path('/Users/madsjenkins/Imperial/HRTF/Volumes/home/HRTF Datasets')
-        self.train_hrtf_dir = 'projected_data/train'
-        self.valid_hrtf_dir = 'projected_data/valid'
 
         # Data processing parameters
         self.pad_width = 2

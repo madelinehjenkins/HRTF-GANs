@@ -101,4 +101,4 @@ if __name__ == '__main__':
         tag = 'test'
     main(args.mode, tag, hpc)
 
-    # main('train', 'test', using_hpc=False)
+    # main('train', 'localtrain', using_hpc=False)
