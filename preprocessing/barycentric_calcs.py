@@ -1,5 +1,7 @@
 import numpy as np
 
+from preprocessing.convert_coordinates import convert_sphere_to_cartesian
+
 
 def calc_dist_haversine(elevation1, azimuth1, elevation2, azimuth2):
     """Calculates the haversine distance between two points on a sphere
@@ -48,6 +50,83 @@ def calc_all_distances(elevation, azimuth, sphere_coords):
 
     # sorted list of (elevation, azimuth, distance) for all points
     return sorted(distances, key=lambda x: x[2])
+
+
+def get_possible_triangles(max_vertex_index, point_distances):
+    """Using the closest max_vertex_index points as possible vertices, find all possible triangles
+
+    Return possible triangles as a list of (vertex_0, vertex_1, vertex_2, total_distance), sorted from smallest
+    total_distance to the largest possible distance
+
+    :param max_vertex_index: how many possible vertices to consider
+    :param point_distances: a list of measured points in the form (elevation, azimuth, distance), where distance refers
+                            to their distance from the interpolation point of interest. Sorted based on this distance.
+    """
+    possible_triangles = []
+    for v0 in range(max_vertex_index - 1):
+        for v1 in range(v0 + 1, max_vertex_index):
+            for v2 in range(v1 + 1, max_vertex_index + 1):
+                total_dist = point_distances[v0][2] + point_distances[v1][2] + point_distances[v2][2]
+                possible_triangles.append((v0, v1, v2, total_dist))
+
+    return sorted(possible_triangles, key=lambda x: x[3])
+
+
+def triangle_encloses_point(elevation, azimuth, triangle_coordinates):
+    """Determine whether the spherical triangle defined by triangle_coordinates encloses the point located at
+    (elevation, azimuth)"""
+    # convert point of interest to cartesian coordinates and add to array
+    x, y, z, _ = convert_sphere_to_cartesian([[elevation, azimuth]])
+    point = np.array([x, y, z])
+    # convert triangle coordinates to cartesian and add to array
+    x_triangle, y_triangle, z_triangle, _ = convert_sphere_to_cartesian(triangle_coordinates)
+    triangle_points = np.array([x_triangle, y_triangle, z_triangle])
+
+    # check if matrix is singular
+    if np.linalg.matrix_rank(triangle_points) < 3:
+        return False
+
+    # solve system of equations
+    solution = np.linalg.solve(triangle_points, point)
+
+    # this checks that a point lies in a spherical triangle by checking that the vector formed from the center of the
+    # sphere to the point of interest intersects the plane formed by the triangle's vertices
+    # check that constraints are satisfied
+    solution_sum = np.sum(solution)
+    solution_lambda = 1. / solution_sum
+
+    return solution_lambda > 0 and np.all(solution > 0)
+
+
+def get_triangle_vertices(elevation, azimuth, sphere_coords):
+    """For a given point (elevation, azimuth), find the best possible triangle for barycentric interpolation.
+
+    The best triangle is defined as the triangle with the minimum total distance from vertices to the point of interest
+    that also encloses the point of interest"""
+    # get distances from point of interest to every other point
+    point_distances = calc_all_distances(elevation=elevation, azimuth=azimuth, sphere_coords=sphere_coords)
+
+    # first try triangle formed by closest points
+    triangle_vertices = [point_distances[0][:2], point_distances[1][:2], point_distances[2][:2]]
+    if triangle_encloses_point(elevation, azimuth, triangle_vertices):
+        selected_triangle_vertices = triangle_vertices
+    else:
+        # failing that, examine all possible triangles
+        # possible triangles is sorted from shortest total distance to longest total distance
+        # possible_triangles = get_possible_triangles(len(point_distances) - 1, point_distances)
+        possible_triangles = get_possible_triangles(500, point_distances)
+        for v0, v1, v2, _ in possible_triangles:
+            triangle_vertices = [point_distances[v0][:2], point_distances[v1][:2], point_distances[v2][:2]]
+
+            # for each triangle, check if it encloses the point
+            if triangle_encloses_point(elevation, azimuth, triangle_vertices):
+                selected_triangle_vertices = triangle_vertices
+                break
+        else:
+            raise RuntimeError(f"No enclosing triangle found for elevation {elevation}, azimuth {azimuth}.")
+
+    # if no triangles enclose the point, this will return none
+    return selected_triangle_vertices
 
 
 def calc_barycentric_coordinates(elevation, azimuth, closest_points):
