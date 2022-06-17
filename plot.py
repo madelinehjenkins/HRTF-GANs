@@ -6,13 +6,20 @@ import torch
 from matplotlib import patches
 from matplotlib.ticker import LinearLocator
 
-from convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian
-from utils import calc_all_interpolated_features, get_feature_for_point
+from preprocessing.convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian
+from preprocessing.utils import calc_all_interpolated_features, get_feature_for_point
 
 PI_4 = np.pi / 4
 
 
 def plot_3d_shape(shape, coordinates, shading=None):
+    """Plot points from a sphere or a cubed sphere in 3D
+
+    :param shape: either "sphere" or "cube" to specify the shape to plot
+    :param coordinates: A list of coordinates to plot, either (elevation, azimuth) for spheres or
+                        (panel, x, y) for cubed spheres
+    :param shading: A list of values equal in length to the number of coordinates that is used for shading the points
+    """
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
     # Format data.
@@ -20,6 +27,8 @@ def plot_3d_shape(shape, coordinates, shading=None):
         x, y, z, mask = convert_sphere_to_cartesian(coordinates)
     elif shape == "cube":
         x, y, z, mask = convert_cube_to_cartesian(coordinates)
+    else:
+        raise RuntimeError("Please provide a valid shape, either 'sphere' or 'cube'.")
 
     if shading is not None:
         shading = list(itertools.compress(shading, mask))
@@ -39,6 +48,11 @@ def plot_3d_shape(shape, coordinates, shading=None):
 
 
 def plot_flat_cube(cube_coords, shading=None):
+    """Plot points from cubed sphere in its flattened form
+
+    :param cube_coords: A list of coordinates to plot in the form (panel, x, y) for cubed spheres
+    :param shading: A list of values equal in length to the number of coordinates that is used for shading the points
+    """
     fig, ax = plt.subplots()
 
     # Format data.
@@ -94,6 +108,7 @@ def plot_flat_cube(cube_coords, shading=None):
 
 
 def plot_impulse_response(times, title=""):
+    """Plot a single impulse response, where sound pressure levels are provided as a list"""
     plt.plot(times)
     plt.title(title, fontsize=16)
     plt.xlabel("Time", fontsize=14)
@@ -102,6 +117,7 @@ def plot_impulse_response(times, title=""):
 
 
 def plot_ir_subplots(hrir1, hrir2, title1="", title2="", suptitle=""):
+    """Plot two IRs as subplots"""
     fig, axs = plt.subplots(2)
     fig.suptitle(suptitle, fontsize=16)
     axs[0].plot(hrir1)
@@ -115,22 +131,25 @@ def plot_ir_subplots(hrir1, hrir2, title1="", title2="", suptitle=""):
     plt.show()
 
 
-def plot_interpolated_features(cs, features, feature_index, euclidean_cube, euclidean_sphere,
-                               euclidean_sphere_triangles, euclidean_sphere_coeffs):
-    selected_feature_interpolated = calc_all_interpolated_features(cs, features, feature_index, euclidean_sphere,
-                                                                   euclidean_sphere_triangles, euclidean_sphere_coeffs)
+def plot_interpolated_features(cs, features, i, euclidean_cube, euclidean_sphere, sphere_triangles, sphere_coeffs):
+    """Plot i-th interpolated feature on flatted cubed sphere, 3D cubed sphere, & 3D sphere"""
+    # TODO: test this function to ensure I have not broken it
 
-    plot_flat_cube(euclidean_cube, shading=selected_feature_interpolated)
-    plot_3d_shape("cube", euclidean_cube, shading=selected_feature_interpolated)
-    plot_3d_shape("sphere", euclidean_sphere, shading=selected_feature_interpolated)
+    interpolated = calc_all_interpolated_features(cs, features, euclidean_sphere, sphere_triangles, sphere_coeffs)
+
+    plot_flat_cube(euclidean_cube, shading=interpolated[i])
+    plot_3d_shape("cube", euclidean_cube, shading=interpolated[i])
+    plot_3d_shape("sphere", euclidean_sphere, shading=interpolated[i])
 
 
-def plot_original_features(cs, features, feature_index):
+def plot_original_features(cs, features, i):
+    """Plot i-th original feature on flatted cubed sphere, 3D cubed sphere, & 3D sphere"""
+
     selected_feature_raw = []
     for p in cs.get_sphere_coords():
         if p[0] is not None:
             features_p = get_feature_for_point(p[0], p[1], cs.get_all_coords(), features)
-            selected_feature_raw.append(features_p[feature_index])
+            selected_feature_raw.append(features_p[i])
         else:
             selected_feature_raw.append(None)
 
@@ -140,6 +159,11 @@ def plot_original_features(cs, features, feature_index):
 
 
 def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
+    """Plot panels with padding, indicating on the plot which areas are padded vs. not
+
+    Useful for verifying that padding has been performed correctly
+    """
+
     # panel tensor must be of shape (5, n, n) where n = edge_len + padding
     fig, axs = plt.subplots(2, 4, sharex='col', sharey='row', figsize=(9, 5))
 
@@ -156,9 +180,10 @@ def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
         axs[row, col].add_patch(rect)
 
         if label_cells:
-            for i in range(edge_len + 2*pad_width):
-                for j in range(edge_len + 2*pad_width):
-                    axs[row, col].text(j, i, round(1000*plot_tensor[i][j].item(), 1), ha="center", va="center", color="w")
+            for i in range(edge_len + 2 * pad_width):
+                for j in range(edge_len + 2 * pad_width):
+                    axs[row, col].text(j, i, round(1000 * plot_tensor[i][j].item(), 1), ha="center", va="center",
+                                       color="w")
 
     axs[0, 0].axis('off')
     axs[0, 2].axis('off')
