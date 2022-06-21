@@ -213,7 +213,7 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     max_magnitude = min((torch.max(lr_selected), torch.max(sr_selected), torch.max(hr_selected)))
 
     fig, axs = plt.subplots(3, ncol, subplot_kw={'xticks': [], 'yticks': []})
-    # plt.subplots_adjust(hspace=0.5)
+    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.8, hspace=0.5, wspace=0.1)
 
     for n, lr_hrtf in enumerate(lr_selected):
         ax = plt.subplot(3, ncol, n + 1)
@@ -230,17 +230,20 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
         temp = ax.imshow(hr_hrtf, vmin=min_magnitude, vmax=max_magnitude)
         ax.set_title("HR " + str(n))
 
-    fig.colorbar(temp, ax=axs, orientation='horizontal')
-    fig.suptitle("Comparison of LR images, their generated SR counterparts, \nand the HR ground truth")
+    fig.colorbar(temp, ax=axs, shrink=0.7)
+    fig.suptitle("Comparison of LR magnitudes, their generated SR counterparts, \nand HR ground truth")
 
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig(f'{path}/{epoch}_{batch_index}_slices.png')
 
 
 def plot_losses(train_losses_d, train_losses_g, path):
     """Plot the discriminator and generator loss over time"""
-    plt.plot(train_losses_d, label='Discriminator loss')
-    plt.plot(train_losses_g, label='Generator loss')
+    plt.figure()
+    loss_d = [x.item() for x in train_losses_d]
+    loss_g = [x.item() for x in train_losses_g]
+    plt.plot(loss_d, label='Discriminator loss')
+    plt.plot(loss_g, label='Generator loss')
 
     plt.title("Loss Curves")
     plt.xlabel("Epochs")
