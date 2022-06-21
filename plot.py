@@ -200,3 +200,50 @@ def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
     fig.suptitle(title)
     fig.tight_layout()
     plt.show()
+
+
+def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
+    """Based on the input data to the GAN and the output from the generator, plot a single panel for the first 4 HRTFs
+    in the batch, at a given freq_index
+    """
+    lr_selected = lr[:ncol, freq_index, :, :]
+    sr_selected = sr[:ncol, freq_index, :, :]
+    hr_selected = hr[:ncol, freq_index, :, :]
+    min_magnitude = min((torch.min(lr_selected), torch.min(sr_selected), torch.min(hr_selected)))
+    max_magnitude = min((torch.max(lr_selected), torch.max(sr_selected), torch.max(hr_selected)))
+
+    fig, axs = plt.subplots(3, ncol, subplot_kw={'xticks': [], 'yticks': []})
+    # plt.subplots_adjust(hspace=0.5)
+
+    for n, lr_hrtf in enumerate(lr_selected):
+        ax = plt.subplot(3, ncol, n + 1)
+        ax.imshow(lr_hrtf, vmin=min_magnitude, vmax=max_magnitude)
+        ax.set_title("LR " + str(n))
+
+    for n, sr_hrtf in enumerate(sr_selected):
+        ax = plt.subplot(3, ncol, n + 1 + ncol)
+        ax.imshow(sr_hrtf, vmin=min_magnitude, vmax=max_magnitude)
+        ax.set_title("SR " + str(n))
+
+    for n, hr_hrtf in enumerate(hr_selected):
+        ax = plt.subplot(3, ncol, n + 1 + (2 * ncol))
+        temp = ax.imshow(hr_hrtf, vmin=min_magnitude, vmax=max_magnitude)
+        ax.set_title("HR " + str(n))
+
+    fig.colorbar(temp, ax=axs, orientation='horizontal')
+    fig.suptitle("Comparison of LR images, their generated SR counterparts, \nand the HR ground truth")
+
+    plt.tight_layout()
+    plt.savefig(f'{path}/{epoch}_{batch_index}_slices.png')
+
+
+def plot_losses(train_losses_d, train_losses_g, path):
+    """Plot the discriminator and generator loss over time"""
+    plt.plot(train_losses_d, label='Discriminator loss')
+    plt.plot(train_losses_g, label='Generator loss')
+
+    plt.title("Loss Curves")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(f'{path}/loss_curves.png')
