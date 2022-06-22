@@ -116,12 +116,12 @@ def calc_hrtf(hrirs):
     magnitudes = []
     phases = []
     for hrir in hrirs:
-        hrtf = scipy.fft.fft(hrir)
+        # remove value that corresponds to 0 Hz
+        hrtf = scipy.fft.rfft(hrir)[1:]
         magnitude = abs(hrtf)
         phase = [cmath.phase(x) for x in hrtf]
         magnitudes.append(magnitude)
         phases.append(phase)
-
     return magnitudes, phases
 
 
