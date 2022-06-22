@@ -206,9 +206,9 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     """Based on the input data to the GAN and the output from the generator, plot a single panel for the first 4 HRTFs
     in the batch, at a given freq_index
     """
-    lr_selected = lr[:ncol, freq_index, :, :]
-    sr_selected = sr[:ncol, freq_index, :, :]
-    hr_selected = hr[:ncol, freq_index, :, :]
+    lr_selected = lr.detach().cpu().numpy()[:ncol, freq_index, :, :]
+    sr_selected = sr.detach().cpu().numpy()[:ncol, freq_index, :, :]
+    hr_selected = hr.detach().cpu().numpy()[:ncol, freq_index, :, :]
     min_magnitude = min((torch.min(lr_selected), torch.min(sr_selected), torch.min(hr_selected)))
     max_magnitude = min((torch.max(lr_selected), torch.max(sr_selected), torch.max(hr_selected)))
 
