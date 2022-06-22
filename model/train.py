@@ -9,6 +9,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import time
 
+from plot import plot_panel, plot_losses
+
 
 def train(config, train_prefetcher, overwrite=True):
     """ Train the generator and discriminator models
@@ -118,6 +120,8 @@ def train(config, train_prefetcher, overwrite=True):
                 with torch.no_grad():
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
+
+                    plot_panel(lr, sr, hr, batch_index, epoch, path, ncol=4, freq_index=100)
                     progress(batch_index, batches, epoch, num_epochs,
                              timed=np.mean(times))
                     times = []
@@ -132,5 +136,7 @@ def train(config, train_prefetcher, overwrite=True):
         train_losses_D.append(train_loss_D / len(train_prefetcher))
         train_losses_G.append(train_loss_G / len(train_prefetcher))
         print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
+
+    plot_losses(train_losses_D, train_losses_G, path)
 
     print("TRAINING FINISHED")
