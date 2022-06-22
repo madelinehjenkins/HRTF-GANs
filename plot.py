@@ -210,7 +210,7 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     sr_selected = sr.detach().cpu()[:ncol, freq_index, :, :]
     hr_selected = hr.detach().cpu()[:ncol, freq_index, :, :]
     min_magnitude = min((torch.min(lr_selected), torch.min(sr_selected), torch.min(hr_selected)))
-    max_magnitude = min((torch.max(lr_selected), torch.max(sr_selected), torch.max(hr_selected)))
+    max_magnitude = max((torch.max(lr_selected), torch.max(sr_selected), torch.max(hr_selected)))
 
     fig, axs = plt.subplots(3, ncol, subplot_kw={'xticks': [], 'yticks': []})
     plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.8, hspace=0.5, wspace=0.1)
@@ -233,8 +233,8 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     fig.colorbar(temp, ax=axs, shrink=0.7)
     fig.suptitle("Comparison of LR magnitudes, their generated SR counterparts, \nand HR ground truth")
 
-    # plt.tight_layout()
     plt.savefig(f'{path}/{epoch}_{batch_index}_slices.png')
+    plt.close(fig)
 
 
 def plot_losses(train_losses_d, train_losses_g, path):
