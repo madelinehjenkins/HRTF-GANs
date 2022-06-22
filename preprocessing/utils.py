@@ -126,11 +126,23 @@ def calc_hrtf(hrirs):
 
 
 def interpolate_fft_pad(cs, features, sphere, sphere_triangles, sphere_coeffs, cube, edge_len, pad_width):
-    """Combine all data processing steps into one function"""
+    """Combine all data processing steps into one function
+
+    :param cs: Cubed sphere object associated with dataset
+    :param features: All features for a given subject in the dataset, given by ds[i]['features'] from hrtfdata
+    :param sphere: A list of locations of the gridded cubed sphere points to be interpolated,
+                    given as (elevation, azimuth)
+    :param sphere_triangles: A list of lists of triangle vertices for barycentric interpolation, where each list of
+                             vertices defines the triangle for the corresponding point in sphere
+    :param sphere_coeffs: A list of barycentric coordinates for each location in sphere, corresponding to the triangles
+                          described by sphere_triangles
+    :param cube: A list of locations of the gridded cubed sphere points to be interpolated, given as (panel, x, y)
+    :param edge_len: Edge length of gridded cube
+    :param pad_width: Width of padding for each edge of the cube
+    """
     # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
     # load_cube, all three lists share the same ordering
-    interpolated_hrirs = calc_all_interpolated_features(cs, features,
-                                                        sphere, sphere_triangles, sphere_coeffs)
+    interpolated_hrirs = calc_all_interpolated_features(cs, features, sphere, sphere_triangles, sphere_coeffs)
     magnitudes, phases = calc_hrtf(interpolated_hrirs)
 
     # create empty list of lists of lists and initialize counter
