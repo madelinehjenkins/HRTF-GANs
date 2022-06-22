@@ -125,20 +125,19 @@ def calc_hrtf(hrirs):
     return magnitudes, phases
 
 
-def interpolate_fft_pad(cs, features, load_sphere, load_sphere_triangles, load_sphere_coeffs, load_cube, edge_len,
-                        pad_width):
+def interpolate_fft_pad(cs, features, sphere, sphere_triangles, sphere_coeffs, cube, edge_len, pad_width):
     """Combine all data processing steps into one function"""
     # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
     # load_cube, all three lists share the same ordering
     interpolated_hrirs = calc_all_interpolated_features(cs, features,
-                                                        load_sphere, load_sphere_triangles, load_sphere_coeffs)
+                                                        sphere, sphere_triangles, sphere_coeffs)
     magnitudes, phases = calc_hrtf(interpolated_hrirs)
 
     # create empty list of lists of lists and initialize counter
     magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
     count = 0
 
-    for panel, x, y in load_cube:
+    for panel, x, y in cube:
         # based on cube coordinates, get indices for magnitudes list of lists
         i = panel - 1
         j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
