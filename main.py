@@ -79,14 +79,21 @@ def main(mode, tag, using_hpc):
         # save dataset mean and standard deviation for each channel, across all HRTFs in the training data
         mean = torch.mean(train_hrtfs, [0, 1, 2, 3])
         std = torch.std(train_hrtfs, [0, 1, 2, 3])
-        print(f"mean shape: {mean.shape}")
-        print(f"std shape: {std.shape}")
-        with open("projected_data/ARI_mean_sd", "wb") as file:
+        mean_std_filename = "projected_data/ARI_mean_std"
+        if using_hpc:
+            mean_std_filename = "HRTF-GANs/" + mean_std_filename
+        with open(mean_std_filename, "wb") as file:
             pickle.dump((mean, std), file)
 
     elif mode == 'train':
+        with open(config.train_hrtf_dir + '/../ARI_mean_sd', "rb") as file:
+            mean, std = pickle.load(file)
+
+        # TODO: replace with real mean/sd
+        mean = [0.045 for _ in range(128)]
+        std = [0.035 for _ in range(128)]
         # Trains the GANs, according to the parameters specified in Config
-        train_prefetcher, valid_prefetcher = load_dataset(config)
+        train_prefetcher, valid_prefetcher = load_dataset(config, mean, std)
         print("Loaded all datasets successfully.")
 
         overwrite = util.check_existence(tag)
