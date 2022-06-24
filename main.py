@@ -50,7 +50,11 @@ def main(mode, tag, using_hpc):
             cube, sphere, sphere_triangles, sphere_coeffs = pickle.load(file)
 
         # TODO: Split some data into test set
-        train_sample = np.random.choice(ds.subject_ids, int(len(ds.subject_ids) * config.train_samples_ratio))
+        train_size = int(len(ds.subject_ids) * config.train_samples_ratio)
+        train_sample = np.random.choice(ds.subject_ids, train_size)
+        # collect all train_hrtfs to get mean and sd
+        train_hrtfs = torch.empty(size=(train_size, 5, 20, 20, 128))
+        j = 0
         for i in range(len(ds)):
             if i % 10 == 0:
                 print(f"HRTF {i} out of {len(ds)} ({round(100 * i / len(ds))}%)")
@@ -59,6 +63,8 @@ def main(mode, tag, using_hpc):
             # save cleaned hrtfdata
             if ds[i]['group'] in train_sample:
                 projected_dir = "projected_data/train/"
+                train_hrtfs[j] = clean_hrtf
+                j += 1
             else:
                 projected_dir = "projected_data/valid/"
 
@@ -70,9 +76,16 @@ def main(mode, tag, using_hpc):
             with open(projected_dir + "ARI_" + subject_id + side, "wb") as file:
                 pickle.dump(clean_hrtf, file)
 
+        # save dataset mean and standard deviation for each channel, across all HRTFs in the training data
+        mean = torch.mean(train_hrtfs, [0, 1, 2, 3])
+        std = torch.std(train_hrtfs, [0, 1, 2, 3])
+        print(f"mean shape: {mean.shape}")
+        print(f"std shape: {std.shape}")
+        with open("projected_data/ARI_mean_sd", "wb") as file:
+            pickle.dump((mean, std), file)
+
     elif mode == 'train':
         # Trains the GANs, according to the parameters specified in Config
-
         train_prefetcher, valid_prefetcher = load_dataset(config)
         print("Loaded all datasets successfully.")
 
