@@ -79,11 +79,13 @@ def main(mode, tag, using_hpc):
         # save dataset mean and standard deviation for each channel, across all HRTFs in the training data
         mean = torch.mean(train_hrtfs, [0, 1, 2, 3])
         std = torch.std(train_hrtfs, [0, 1, 2, 3])
-        mean_std_filename = "projected_data/ARI_mean_std"
+        min_hrtf = torch.min(train_hrtfs)
+        max_hrtf = torch.max(train_hrtfs)
+        mean_std_filename = "projected_data/ARI_mean_std_min_max"
         if using_hpc:
             mean_std_filename = "HRTF-GANs/" + mean_std_filename
         with open(mean_std_filename, "wb") as file:
-            pickle.dump((mean, std), file)
+            pickle.dump((mean, std, min_hrtf, max_hrtf), file)
 
     elif mode == 'train':
         with open(config.train_hrtf_dir + '/../ARI_mean_sd', "rb") as file:
