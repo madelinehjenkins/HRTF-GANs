@@ -13,10 +13,13 @@ class TrainValidHRTFDataset(Dataset):
         hrtf_dir (str): Train/Valid dataset address.
         hrtf_size (int): High resolution hrtf size.
         upscale_factor (int): hrtf up scale factor.
-        mode (str): Data set loading method, the training data set is for data enhancement, and the verification data set is not for data enhancement.
+        mode (str): Data set loading method, the training data set is for data enhancement, and the verification data
+                    set is not for data enhancement.
+        transform (callable): A function/transform that takes in an HRTF and returns a transformed version.
     """
 
-    def __init__(self, hrtf_dir: str, hrtf_size: int, upscale_factor: int, mode: str) -> None:
+    def __init__(self, hrtf_dir: str, hrtf_size: int, upscale_factor: int, mode: str,
+                 transform=None) -> None:
         super(TrainValidHRTFDataset, self).__init__()
         # Get all hrtf file names in folder
         self.hrtf_file_names = [os.path.join(hrtf_dir, hrtf_file_name) for hrtf_file_name in os.listdir(hrtf_dir)]
@@ -26,6 +29,8 @@ class TrainValidHRTFDataset(Dataset):
         self.upscale_factor = upscale_factor
         # Load training dataset or test dataset
         self.mode = mode
+        # transform to be applied to the data
+        self.transform = transform
 
     def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
         # Read a batch of hrtf data
@@ -34,10 +39,13 @@ class TrainValidHRTFDataset(Dataset):
 
         # TODO: using hrtf[0] is a temporary measure to use only a single panel of the cubed sphere
         hrtf = hrtf[0]
+
         # hrtf processing operations
         # TODO: consider cropping hrtf to remove padding, or adding padding downstream
         # permute such that channels come first, and unsqueeze so first dimension is mini-batch (1)
         hr_hrtf = torch.unsqueeze(torch.permute(hrtf, (2, 0, 1)), 0)
+        if self.transform is not None:
+            hr_hrtf = self.transform(hr_hrtf)
         # downsample hrtf
         lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
 
