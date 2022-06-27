@@ -3,6 +3,8 @@ import os
 
 # check for existing models and folders
 from torch.utils.data import DataLoader
+from torchvision.transforms import transforms
+
 from model.dataset import CUDAPrefetcher, TrainValidHRTFDataset, CPUPrefetcher
 
 
@@ -50,11 +52,15 @@ def initialise_folders(tag, overwrite):
             pass
 
 
-def load_dataset(config) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
+def load_dataset(config, mean, std) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
+    # define transforms
+    transform = transforms.Normalize(mean=mean, std=std)
     # Load train, test and valid datasets
-    train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train")
-    valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, "Valid")
+    train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train",
+                                           transform=transform)
+    valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, "Valid",
+                                           transform=transform)
     # TODO: set up test datasets
     # test_datasets = TestHRTFDataset(config.test_lr_hrtf_dir, config.test_hr_hrtf_dir)
 

@@ -121,7 +121,7 @@ def train(config, train_prefetcher, overwrite=True):
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
 
-                    plot_panel(lr, sr, hr, batch_index, epoch, path, ncol=4, freq_index=100)
+                    plot_panel(lr, sr, hr, batch_index, epoch, path, ncol=4, freq_index=10)
                     progress(batch_index, batches, epoch, num_epochs,
                              timed=np.mean(times))
                     times = []
