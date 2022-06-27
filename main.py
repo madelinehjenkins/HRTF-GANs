@@ -88,12 +88,9 @@ def main(mode, tag, using_hpc):
             pickle.dump((mean, std, min_hrtf, max_hrtf), file)
 
     elif mode == 'train':
-        with open(config.train_hrtf_dir + '/../ARI_mean_sd', "rb") as file:
-            mean, std = pickle.load(file)
+        with open(config.train_hrtf_dir + '/../ARI_mean_std_min_max', "rb") as file:
+            mean, std, min_hrtf, max_hrtf = pickle.load(file)
 
-        # TODO: replace with real mean/sd
-        mean = [0.045 for _ in range(128)]
-        std = [0.035 for _ in range(128)]
         # Trains the GANs, according to the parameters specified in Config
         train_prefetcher, valid_prefetcher = load_dataset(config, mean, std)
         print("Loaded all datasets successfully.")
