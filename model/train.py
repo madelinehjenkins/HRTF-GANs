@@ -83,28 +83,34 @@ def train(config, train_prefetcher, overwrite=True):
             sr = netG(lr)
 
             # Calculate the classification score of the discriminator model for real samples
-            hr_output = netD(hr).mean()
+            label = torch.full((batch_size, ), 1., dtype=hr.dtype, device=device)
+            loss_D_hr = nn.BCELoss()(netD(hr), label)
+            loss_D_hr.backward()
 
             # train on SR hrtfs
-            sr_output = netD(sr.detach()).mean()
+            label.fill_(0.)
+            loss_D_sr = nn.BCELoss()(netD(sr.detach()), label)
+            loss_D_sr.backward()
 
-            # Compute the discriminator loss and backprop
-            disc_cost = sr_output - hr_output
-            train_loss_D += disc_cost
-            disc_cost.backward()
+            # Compute the discriminator loss
+            loss_D = loss_D_hr + loss_D_sr
+            train_loss_D += loss_D
 
+            # Update D
             optD.step()
 
             # Generator training
             if batch_index % int(critic_iters) == 0:
                 # Initialize generator model gradients
                 netG.zero_grad()
+                label.fill_(1.)
                 # Calculate adversarial loss
-                output = -netD(sr).mean()
-                train_loss_G += output
-
+                output = netD(sr)
                 # Calculate loss for G and backprop
-                output.backward()
+                loss_G = nn.BCELoss()(output, label)
+                loss_G.backward()
+                train_loss_G += loss_G
+
                 optG.step()
 
             if ('cuda' in str(device)) and (ngpu > 1):
