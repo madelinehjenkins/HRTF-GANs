@@ -84,12 +84,14 @@ def train(config, train_prefetcher, overwrite=True):
 
             # Calculate the classification score of the discriminator model for real samples
             label = torch.full((batch_size, ), 1., dtype=hr.dtype, device=device)
-            loss_D_hr = nn.BCELoss()(netD(hr), label)
+            output = netD(hr).view(-1)
+            loss_D_hr = nn.BCELoss()(output, label)
             loss_D_hr.backward()
 
             # train on SR hrtfs
             label.fill_(0.)
-            loss_D_sr = nn.BCELoss()(netD(sr.detach()), label)
+            output = netD(sr.detach()).view(-1)
+            loss_D_sr = nn.BCELoss()(output, label)
             loss_D_sr.backward()
 
             # Compute the discriminator loss
@@ -105,7 +107,7 @@ def train(config, train_prefetcher, overwrite=True):
                 netG.zero_grad()
                 label.fill_(1.)
                 # Calculate adversarial loss
-                output = netD(sr)
+                output = netD(sr).view(-1)
                 # Calculate loss for G and backprop
                 loss_G = nn.BCELoss()(output, label)
                 loss_G.backward()
