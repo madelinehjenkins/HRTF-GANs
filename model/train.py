@@ -131,8 +131,8 @@ def train(config, train_prefetcher, overwrite=True):
                 end_overall = time.time()
                 times.append(end_overall - start_overall)
 
-            # Every 5 batches log useful metrics
-            if batch_index % 5 == 0:
+            # Every 0th batch log useful metrics
+            if batch_index == 0:
                 with torch.no_grad():
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
