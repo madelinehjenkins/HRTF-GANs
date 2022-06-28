@@ -53,7 +53,7 @@ def main(mode, tag, using_hpc):
         train_size = int(len(set(ds.subject_ids)) * config.train_samples_ratio)
         train_sample = np.random.choice(ds.subject_ids, train_size)
         # collect all train_hrtfs to get mean and sd
-        train_hrtfs = torch.empty(size=(2 * train_size, 5, 20, 20, 128))
+        train_hrtfs = torch.empty(size=(2 * train_size, 5, config.hrtf_size, config.hrtf_size, 128))
         j = 0
         for i in range(len(ds)):
             if i % 10 == 0:
