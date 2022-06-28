@@ -40,9 +40,14 @@ def train(config, train_prefetcher, overwrite=True):
     if ('cuda' in str(device)) and (ngpu > 1):
         netD = (nn.DataParallel(netD, list(range(ngpu)))).to(device)
         netG = nn.DataParallel(netG, list(range(ngpu))).to(device)
+
     # Define optimizers
     optD = optim.Adam(netD.parameters(), lr=lr_dis, betas=(beta1, beta2))
     optG = optim.Adam(netG.parameters(), lr=lr_gen, betas=(beta1, beta2))
+
+    # Define loss functions
+    adversarial_criterion = nn.BCEWithLogitsLoss()
+    content_criterion = nn.MSELoss()
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
@@ -85,13 +90,13 @@ def train(config, train_prefetcher, overwrite=True):
             # Calculate the classification score of the discriminator model for real samples
             label = torch.full((batch_size, ), 1., dtype=hr.dtype, device=device)
             output = netD(hr).view(-1)
-            loss_D_hr = nn.BCEWithLogitsLoss()(output, label)
+            loss_D_hr = adversarial_criterion(output, label)
             loss_D_hr.backward()
 
             # train on SR hrtfs
             label.fill_(0.)
             output = netD(sr.detach()).view(-1)
-            loss_D_sr = nn.BCEWithLogitsLoss()(output, label)
+            loss_D_sr = adversarial_criterion(output, label)
             loss_D_sr.backward()
 
             # Compute the discriminator loss
@@ -108,8 +113,11 @@ def train(config, train_prefetcher, overwrite=True):
                 label.fill_(1.)
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
-                # Calculate loss for G and backprop
-                loss_G = nn.BCEWithLogitsLoss()(output, label)
+
+                content_loss_G = config.content_weight * content_criterion(sr, hr)
+                adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
+                # Calculate the generator total loss value and backprop
+                loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
                 train_loss_G += loss_G
 

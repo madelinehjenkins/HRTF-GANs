@@ -36,6 +36,10 @@ class Config:
         # how often to train the generator
         self.critic_iters = 4
 
+        # Loss function weight
+        self.content_weight = 1.0
+        self.adversarial_weight = 0.001
+
         # betas for Adam optimizer
         self.beta1 = 0.9
         self.beta2 = 0.999
