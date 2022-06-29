@@ -21,15 +21,107 @@ def _ntuple(n, name="parse"):
 
 
 _pair = _ntuple(2, "_pair")
+_quadruple = _ntuple(4, "_quadruple")
 
 # Template for arguments which can be supplied as a tuple, or which can be a scalar which PyTorch will internally
 # broadcast to a tuple.
 # Comes in several variants: A tuple of unknown size, and a fixed-size tuple for 1d, 2d, or 3d operations.
 T = TypeVar('T')
 _scalar_or_tuple_2_t = Union[T, Tuple[T, T]]
+_scalar_or_tuple_4_t = Union[T, Tuple[T, T, T, T]]
 
 # For arguments which represent size parameters (eg, kernel size, padding)
 _size_2_t = _scalar_or_tuple_2_t[int]
+_size_4_t = _scalar_or_tuple_4_t[int]
+
+
+class CubeSpherePadding2D(Module):
+    """
+    Pads the input cubed sphere tensor according to adjacent panels. The requirements for this layer are as follows:
+    - The input data is 5-dimensional (batch, channels, 5, height, width)
+    - The last panel is the top panel
+
+    Adapted from CubeSpherePadding2D by @jweyn
+
+    Args:
+        padding (int): Width of padding on each cube sphere panel
+    """
+    __constants__ = ['padding']
+    padding: int
+
+    def __init__(self, padding: int) -> None:
+        super(CubeSpherePadding2D, self).__init__()
+        self.padding = padding
+
+    def forward(self, inputs: Tensor) -> Tensor:
+        p = self.padding
+
+        # Pad the equatorial upper/lower boundaries and the polar upper/lower boundaries
+        out = [
+            # Panel 0
+            torch.unsqueeze(
+                torch.cat([inputs[:, :, 4, -p:, :],
+                           inputs[:, :, 0]] +
+                          list(repeat(torch.unsqueeze(inputs[:, :, 0, -1, :], 2), p)), dim=2), 2
+            ),
+            # Panel 1
+            torch.unsqueeze(
+                torch.cat([torch.transpose(inputs[:, :, 4, :, -p:], dim0=2, dim1=3),  # TODO: may need to reverse
+                           inputs[:, :, 1]] +
+                          list(repeat(torch.unsqueeze(inputs[:, :, 1, -1, :], 2), p)), dim=2), 2
+            ),
+            # Panel 2
+            torch.unsqueeze(
+                torch.cat([torch.flip(inputs[:, :, 4, :p, :], dims=[2]),  # TODO: may need to reverse
+                           inputs[:, :, 2]] +
+                          list(repeat(torch.unsqueeze(inputs[:, :, 2, -1, :], 2), p)), dim=2), 2
+            ),
+            # Panel 3
+            torch.unsqueeze(
+                torch.cat([torch.transpose(torch.flip(inputs[:, :, 4, :, :p], dims=[3]), dim0=2, dim1=3),
+                           inputs[:, :, 3]] +
+                          list(repeat(torch.unsqueeze(inputs[:, :, 3, -1, :], 2), p)), dim=2), 2
+            ),
+            # Panel 4 (top)
+            torch.unsqueeze(
+                torch.cat([torch.flip(inputs[:, :, 2, :p, :], dims=[2]),
+                           inputs[:, :, 4],
+                           inputs[:, :, 0, :p, :]], dim=2), 2 # TODO: may need to reverse
+            )
+        ]
+
+        out1 = torch.cat(out, dim=2)
+        del out
+
+        # Pad the equatorial periodic lateral boundaries and the polar left/right boundaries
+        out = []
+
+        # Panel 0
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 3, :, -p:],
+                   out1[:, :, 0],
+                   out1[:, :, 1, :, :p]], dim=3), 2))
+        # Panel 1
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 0, :, -p:],
+                   out1[:, :, 1],
+                   out1[:, :, 2, :, :p]], dim=3), 2))
+        # Panel 2
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 1, :, -p:],
+                   out1[:, :, 2],
+                   out1[:, :, 3, :, :p]], dim=3), 2))
+        # Panel 3
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 2, :, -p:],
+                   out1[:, :, 3],
+                   out1[:, :, 0, :, :p]], dim=3), 2))
+        # Panel 4 (top)
+        out.append(torch.unsqueeze(torch.cat([torch.transpose(torch.flip(out[3][:, :, 0, p:2 * p, :], dims=[2]), dim0=2, dim1=3),
+                   out1[:, :, 4],
+                   torch.transpose(out[1][:, :, 0, -2 * p:-p, :], dim0=2, dim1=3)], dim=3), 2)) # TODO: reverse?
+
+        del out1
+        outputs = torch.cat(out, dim=2)
+        del out
+
+        return outputs
 
 
 class _ConvNd(Module):
@@ -307,4 +399,3 @@ class CubeSphereConv2D(_ConvNd):
     def forward(self, input: Tensor) -> Tensor:
         return self._conv_forward(input, self.equatorial_weight, self.polar_weight,
                                   self.equatorial_bias, self.polar_bias)
-

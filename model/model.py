@@ -4,6 +4,8 @@ import torch.nn as nn
 
 # based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/model.py
 
+# TODO: add cube sphere padding before each convolutional layer
+
 class ResidualConvBlock(nn.Module):
     """Implements residual conv function.
     Args:
