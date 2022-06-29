@@ -41,7 +41,6 @@ class TrainValidHRTFDataset(Dataset):
         hrtf = hrtf[0]
 
         # hrtf processing operations
-        # TODO: consider cropping hrtf to remove padding, or adding padding downstream
         # permute such that channels come first, and unsqueeze so first dimension is mini-batch (1)
         hr_hrtf = torch.unsqueeze(torch.permute(hrtf, (2, 0, 1)), 0)
         if self.transform is not None:
