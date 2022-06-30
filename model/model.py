@@ -5,7 +5,6 @@ from model.custom_conv import CubeSpherePadding2D, CubeSphereConv2D
 
 # based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/model.py
 
-# TODO: add cube sphere padding before each convolutional layer
 
 class ResidualConvBlock(nn.Module):
     """Implements residual conv function.
@@ -16,10 +15,12 @@ class ResidualConvBlock(nn.Module):
     def __init__(self, channels: int) -> None:
         super(ResidualConvBlock, self).__init__()
         self.rcb = nn.Sequential(
-            CubeSphereConv2D(channels, channels, (3, 3), (1, 1), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(channels, channels, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(channels),
             nn.PReLU(),
-            CubeSphereConv2D(channels, channels, (3, 3), (1, 1), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(channels, channels, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(channels),
         )
 
@@ -35,7 +36,8 @@ class UpsampleBlock(nn.Module):
     def __init__(self, channels: int) -> None:
         super(UpsampleBlock, self).__init__()
         self.upsample_block_1 = nn.Sequential(
-            CubeSphereConv2D(channels, channels * 4, (3, 3), (1, 1), (1, 1))
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(channels, channels * 4, (3, 3), (1, 1))
         )
         self.upsample_block_2 = nn.Sequential(
             nn.PixelShuffle(2),
@@ -54,31 +56,39 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
         self.features = nn.Sequential(
             # input size. (128) x 20 x 20
-            CubeSphereConv2D(128, 64, (3, 3), (1, 1), (0, 0), bias=True),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(128, 64, (3, 3), (1, 1), bias=True),
             nn.LeakyReLU(0.2, True),
             # state size. (64) x 18 x 18
-            CubeSphereConv2D(64, 64, (3, 3), (1, 1), (0, 0), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(64, 64, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(64),
             nn.LeakyReLU(0.2, True),
-            CubeSphereConv2D(64, 128, (3, 3), (1, 1), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(64, 128, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(128),
             nn.LeakyReLU(0.2, True),
             # state size. (128) x 16 x 16
-            CubeSphereConv2D(128, 128, (3, 3), (2, 2), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(128, 128, (3, 3), (2, 2), bias=False),
             nn.BatchNorm3d(128),
             nn.LeakyReLU(0.2, True),
-            CubeSphereConv2D(128, 256, (3, 3), (1, 1), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(128, 256, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(256),
             nn.LeakyReLU(0.2, True),
             # state size. (256) x 8 x 8
-            CubeSphereConv2D(256, 256, (3, 3), (2, 2), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(256, 256, (3, 3), (2, 2), bias=False),
             nn.BatchNorm3d(256),
             nn.LeakyReLU(0.2, True),
-            CubeSphereConv2D(256, 512, (3, 3), (1, 1), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(256, 512, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(512),
             nn.LeakyReLU(0.2, True),
             # state size. (512) x 4 x 4
-            CubeSphereConv2D(512, 512, (3, 3), (2, 2), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(512, 512, (3, 3), (2, 2), bias=False),
             nn.BatchNorm3d(512),
             nn.LeakyReLU(0.2, True),
         )
@@ -102,7 +112,8 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         # First conv layer.
         self.conv_block1 = nn.Sequential(
-            CubeSphereConv2D(128, 1024, (9, 9), (1, 1), (4, 4)),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(128, 1024, (3, 3), (1, 1)),
             nn.PReLU(),
         )
 
@@ -114,7 +125,8 @@ class Generator(nn.Module):
 
         # Second conv layer.
         self.conv_block2 = nn.Sequential(
-            CubeSphereConv2D(1024, 1024, (3, 3), (1, 1), (1, 1), bias=False),
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(1024, 1024, (3, 3), (1, 1), bias=False),
             nn.BatchNorm3d(1024),
         )
 
@@ -125,7 +137,10 @@ class Generator(nn.Module):
         self.upsampling = nn.Sequential(*upsampling)
 
         # Output layer.
-        self.conv_block3 = CubeSphereConv2D(1024, 128, (9, 9), (1, 1), (4, 4))
+        self.conv_block3 = nn.Sequential(
+            CubeSpherePadding2D(1),
+            CubeSphereConv2D(1024, 128, (3, 3), (1, 1))
+        )
 
         # Initialize neural network weights
         self._initialize_weights()
