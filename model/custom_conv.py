@@ -21,18 +21,15 @@ def _ntuple(n, name="parse"):
 
 
 _pair = _ntuple(2, "_pair")
-_quadruple = _ntuple(4, "_quadruple")
 
 # Template for arguments which can be supplied as a tuple, or which can be a scalar which PyTorch will internally
 # broadcast to a tuple.
 # Comes in several variants: A tuple of unknown size, and a fixed-size tuple for 1d, 2d, or 3d operations.
 T = TypeVar('T')
 _scalar_or_tuple_2_t = Union[T, Tuple[T, T]]
-_scalar_or_tuple_4_t = Union[T, Tuple[T, T, T, T]]
 
 # For arguments which represent size parameters (eg, kernel size, padding)
 _size_2_t = _scalar_or_tuple_2_t[int]
-_size_4_t = _scalar_or_tuple_4_t[int]
 
 
 class CubeSpherePadding2D(Module):
