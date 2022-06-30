@@ -60,33 +60,33 @@ class CubeSpherePadding2D(Module):
         out = [
             # Panel 0
             torch.unsqueeze(
-                torch.cat([inputs[:, :, 4, -p:, :],
-                           inputs[:, :, 0]] +
-                          list(repeat(torch.unsqueeze(inputs[:, :, 0, -1, :], 2), p)), dim=2), 2
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 0, :, 0], 3), p)) +
+                          [inputs[:, :, 0],
+                           inputs[:, :, 4, :, :p]], dim=3), 2
             ),
             # Panel 1
             torch.unsqueeze(
-                torch.cat([torch.transpose(inputs[:, :, 4, :, -p:], dim0=2, dim1=3),  # TODO: may need to reverse
-                           inputs[:, :, 1]] +
-                          list(repeat(torch.unsqueeze(inputs[:, :, 1, -1, :], 2), p)), dim=2), 2
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 1, :, 0], 3), p)) +
+                          [inputs[:, :, 1],
+                           torch.transpose(torch.flip(inputs[:, :, 4, -p:, :], dims=[2]), dim0=2, dim1=3)], dim=3), 2
             ),
             # Panel 2
             torch.unsqueeze(
-                torch.cat([torch.flip(inputs[:, :, 4, :p, :], dims=[2]),  # TODO: may need to reverse
-                           inputs[:, :, 2]] +
-                          list(repeat(torch.unsqueeze(inputs[:, :, 2, -1, :], 2), p)), dim=2), 2
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 2, :, 0], 3), p)) +
+                          [inputs[:, :, 2],
+                           torch.flip(inputs[:, :, 4, :, -p:], dims=[2, 3])], dim=3), 2
             ),
             # Panel 3
             torch.unsqueeze(
-                torch.cat([torch.transpose(torch.flip(inputs[:, :, 4, :, :p], dims=[3]), dim0=2, dim1=3),
-                           inputs[:, :, 3]] +
-                          list(repeat(torch.unsqueeze(inputs[:, :, 3, -1, :], 2), p)), dim=2), 2
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 3, :, 0], 3), p)) +
+                          [inputs[:, :, 3],
+                           torch.transpose(torch.flip(inputs[:, :, 4, :p, :], dims=[3]), dim0=2, dim1=3)], dim=3), 2
             ),
             # Panel 4 (top)
             torch.unsqueeze(
-                torch.cat([torch.flip(inputs[:, :, 2, :p, :], dims=[2]),
+                torch.cat([inputs[:, :, 0, :, -p:],
                            inputs[:, :, 4],
-                           inputs[:, :, 0, :p, :]], dim=2), 2 # TODO: may need to reverse
+                           torch.flip(inputs[:, :, 2, :, -p:], dims=[2, 3])], dim=3), 2
             )
         ]
 
@@ -97,25 +97,28 @@ class CubeSpherePadding2D(Module):
         out = []
 
         # Panel 0
-        out.append(torch.unsqueeze(torch.cat([out1[:, :, 3, :, -p:],
-                   out1[:, :, 0],
-                   out1[:, :, 1, :, :p]], dim=3), 2))
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 3, -p:, :],
+                                              out1[:, :, 0],
+                                              out1[:, :, 1, :p, :]], dim=2), 2))
         # Panel 1
-        out.append(torch.unsqueeze(torch.cat([out1[:, :, 0, :, -p:],
-                   out1[:, :, 1],
-                   out1[:, :, 2, :, :p]], dim=3), 2))
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 0, -p:, :],
+                                              out1[:, :, 1],
+                                              out1[:, :, 2, :p, :]], dim=2), 2))
         # Panel 2
-        out.append(torch.unsqueeze(torch.cat([out1[:, :, 1, :, -p:],
-                   out1[:, :, 2],
-                   out1[:, :, 3, :, :p]], dim=3), 2))
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 1, -p:, :],
+                                              out1[:, :, 2],
+                                              out1[:, :, 3, :p, :]], dim=2), 2))
         # Panel 3
-        out.append(torch.unsqueeze(torch.cat([out1[:, :, 2, :, -p:],
-                   out1[:, :, 3],
-                   out1[:, :, 0, :, :p]], dim=3), 2))
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 2, -p:, :],
+                                              out1[:, :, 3],
+                                              out1[:, :, 0, :p, :]], dim=2), 2))
         # Panel 4 (top)
-        out.append(torch.unsqueeze(torch.cat([torch.transpose(torch.flip(out[3][:, :, 0, p:2 * p, :], dims=[2]), dim0=2, dim1=3),
-                   out1[:, :, 4],
-                   torch.transpose(out[1][:, :, 0, -2 * p:-p, :], dim0=2, dim1=3)], dim=3), 2)) # TODO: reverse?
+        out.append(torch.unsqueeze(
+            torch.cat([torch.transpose(torch.flip(out[3][:, :, 0, :, -2 * p:-p], dims=[2]), dim0=2, dim1=3),
+                       out1[:, :, 4],
+                       torch.transpose(torch.flip(out[1][:, :, 0, :, -2 * p:-p], dims=[3]), dim0=2, dim1=3)], dim=2),
+            2)
+        )
 
         del out1
         outputs = torch.cat(out, dim=2)
