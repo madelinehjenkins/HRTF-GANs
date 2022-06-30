@@ -37,20 +37,18 @@ class TrainValidHRTFDataset(Dataset):
         with open(self.hrtf_file_names[batch_index], "rb") as file:
             hrtf = pickle.load(file)
 
-        # TODO: using hrtf[0] is a temporary measure to use only a single panel of the cubed sphere
-        hrtf = hrtf[0]
-
         # hrtf processing operations
-        # permute such that channels come first, and unsqueeze so first dimension is mini-batch (1)
-        hr_hrtf = torch.unsqueeze(torch.permute(hrtf, (2, 0, 1)), 0)
         if self.transform is not None:
-            hr_hrtf = self.transform(hr_hrtf)
+            # If using a transform, treat panels as batch dim such that dims are (panels, channels, X, Y)
+            hr_hrtf = torch.permute(hrtf, (0, 3, 1, 2))
+            # Then, transform hr_hrtf to normalize and swap panel/channel dims to get channels first
+            hr_hrtf = torch.permute(self.transform(hr_hrtf), (1, 0, 2, 3))
+        else:
+            # If no transform, go directly to (channels, panels, X, Y)
+            hr_hrtf = torch.permute(hrtf, (3, 0, 1, 2))
+
         # downsample hrtf
         lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
-
-        # squeeze to remove mini-batch dimension
-        hr_hrtf = torch.squeeze(hr_hrtf)
-        lr_hrtf = torch.squeeze(lr_hrtf)
 
         return {"lr": lr_hrtf, "hr": hr_hrtf}
 
