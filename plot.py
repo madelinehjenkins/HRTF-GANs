@@ -200,13 +200,15 @@ def plot_ir_subplots(hrir1, hrir2, title1="", title2="", suptitle=""):
 
 def plot_interpolated_features(cs, features, i, euclidean_cube, euclidean_sphere, sphere_triangles, sphere_coeffs):
     """Plot i-th interpolated feature on flatted cubed sphere, 3D cubed sphere, & 3D sphere"""
-    # TODO: test this function to ensure I have not broken it
 
     interpolated = calc_all_interpolated_features(cs, features, euclidean_sphere, sphere_triangles, sphere_coeffs)
+    interpolated = [point[i] for point in interpolated]
 
-    plot_flat_cube(euclidean_cube, shading=interpolated[i])
-    plot_3d_shape("cube", euclidean_cube, shading=interpolated[i])
-    plot_3d_shape("sphere", euclidean_sphere, shading=interpolated[i])
+    plot_3d_shape("cube", euclidean_cube, shading=interpolated)
+    plot_3d_shape("sphere", euclidean_sphere, shading=interpolated)
+    plot_flat_cube(euclidean_cube, shading=interpolated)
+    plot_flat_panel(euclidean_cube, shading=interpolated)
+    plot_polar(euclidean_sphere, shading=interpolated)
 
 
 def plot_original_features(cs, features, i):
@@ -223,6 +225,8 @@ def plot_original_features(cs, features, i):
     plot_3d_shape("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
     plot_3d_shape("cube", cs.get_cube_coords(), shading=selected_feature_raw)
     plot_flat_cube(cs.get_cube_coords(), shading=selected_feature_raw)
+    plot_flat_panel(cs.get_cube_coords(), shading=selected_feature_raw)
+    plot_polar(cs.get_sphere_coords(), shading=selected_feature_raw)
 
 
 def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
