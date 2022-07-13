@@ -8,7 +8,6 @@ import torch
 from preprocessing.barycentric_calcs import calc_barycentric_coordinates, get_triangle_vertices
 from preprocessing.convert_coordinates import convert_cube_to_sphere
 from preprocessing.KalmanFilter import KalmanFilter
-from preprocessing.padding import pad_cubed_sphere
 
 PI_4 = np.pi / 4
 
@@ -125,7 +124,7 @@ def calc_hrtf(hrirs):
     return magnitudes, phases
 
 
-def interpolate_fft_pad(cs, features, sphere, sphere_triangles, sphere_coeffs, cube, edge_len, pad_width):
+def interpolate_fft(cs, features, sphere, sphere_triangles, sphere_coeffs, cube, edge_len):
     """Combine all data processing steps into one function
 
     :param cs: Cubed sphere object associated with dataset
@@ -138,7 +137,6 @@ def interpolate_fft_pad(cs, features, sphere, sphere_triangles, sphere_coeffs, c
                           described by sphere_triangles
     :param cube: A list of locations of the gridded cubed sphere points to be interpolated, given as (panel, x, y)
     :param edge_len: Edge length of gridded cube
-    :param pad_width: Width of padding for each edge of the cube
     """
     # interpolated_hrirs is a list of interpolated HRIRs corresponding to the points specified in load_sphere and
     # load_cube, all three lists share the same ordering
@@ -159,11 +157,8 @@ def interpolate_fft_pad(cs, features, sphere, sphere_triangles, sphere_coeffs, c
         magnitudes_raw[i][j][k] = magnitudes[count]
         count += 1
 
-    # pad each panel of the cubed sphere appropriately
-    magnitudes_pad = pad_cubed_sphere(magnitudes_raw, pad_width)
-
     # convert list of numpy arrays into a single array, such that converting into tensor is faster
-    return torch.tensor(np.array(magnitudes_pad))
+    return torch.tensor(np.array(magnitudes_raw))
 
 
 def remove_itd(hrir, pre_window, length):

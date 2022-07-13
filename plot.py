@@ -47,6 +47,43 @@ def plot_3d_shape(shape, coordinates, shading=None):
     plt.show()
 
 
+def plot_flat_panel(cube_coords, shading=None):
+    """Plot points from a single panel of a cubed sphere in its flattened form
+
+    :param cube_coords: A list of coordinates to plot in the form (panel, x, y) for cubed spheres
+    :param shading: A list of values equal in length to the number of coordinates that is used for shading the points
+    """
+    fig, ax = plt.subplots()
+
+    # Format data.
+    x, y = [], []
+    mask = []
+
+    for panel, p, q in cube_coords:
+        if panel == 1:
+            if not np.isnan(p) and not np.isnan(q):
+                mask.append(True)
+                x.append(p)
+                y.append(q)
+            else:
+                mask.append(False)
+        else:
+            mask.append(False)
+
+    x, y = np.asarray(x), np.asarray(y)
+
+    if shading is not None:
+        shading = list(itertools.compress(shading, mask))
+
+    # Plot the surface.
+    sc = ax.scatter(x, y, c=shading, s=50,
+                    linewidth=0, antialiased=False, vmin=-0.04, vmax=0.03)
+    plt.colorbar(sc)
+
+    fig.tight_layout()
+    plt.show()
+
+
 def plot_flat_cube(cube_coords, shading=None):
     """Plot points from cubed sphere in its flattened form
 
@@ -107,6 +144,36 @@ def plot_flat_cube(cube_coords, shading=None):
     plt.show()
 
 
+def plot_polar(sphere_coords, shading=None):
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+
+    # Format data.
+    theta, r = [], []
+    mask = []
+
+    for elevation, azimuth in sphere_coords:
+        if elevation is not None and azimuth is not None and elevation < 0:
+            mask.append(True)
+            theta.append(azimuth)
+            r.append(np.pi + elevation)
+        else:
+            mask.append(False)
+
+    if shading is not None:
+        shading = list(itertools.compress(shading, mask))
+
+    sc = ax.scatter(theta, r, c=shading, s=5)
+    plt.colorbar(sc)
+    ax.set_rmax(np.pi)
+    ax.set_rmin(0)
+    ax.set_rticks([2, 2.5, 3])  # Less radial ticks
+    ax.set_rlabel_position(-22.5)  # Move radial labels away from plotted line
+    ax.grid(True)
+
+    ax.set_title("A plot of the bottom of the sphere", va='bottom')
+    plt.show()
+
+
 def plot_impulse_response(times, title=""):
     """Plot a single impulse response, where sound pressure levels are provided as a list"""
     plt.plot(times)
@@ -133,13 +200,15 @@ def plot_ir_subplots(hrir1, hrir2, title1="", title2="", suptitle=""):
 
 def plot_interpolated_features(cs, features, i, euclidean_cube, euclidean_sphere, sphere_triangles, sphere_coeffs):
     """Plot i-th interpolated feature on flatted cubed sphere, 3D cubed sphere, & 3D sphere"""
-    # TODO: test this function to ensure I have not broken it
 
     interpolated = calc_all_interpolated_features(cs, features, euclidean_sphere, sphere_triangles, sphere_coeffs)
+    interpolated = [point[i] for point in interpolated]
 
-    plot_flat_cube(euclidean_cube, shading=interpolated[i])
-    plot_3d_shape("cube", euclidean_cube, shading=interpolated[i])
-    plot_3d_shape("sphere", euclidean_sphere, shading=interpolated[i])
+    plot_3d_shape("cube", euclidean_cube, shading=interpolated)
+    plot_3d_shape("sphere", euclidean_sphere, shading=interpolated)
+    plot_flat_cube(euclidean_cube, shading=interpolated)
+    plot_flat_panel(euclidean_cube, shading=interpolated)
+    plot_polar(euclidean_sphere, shading=interpolated)
 
 
 def plot_original_features(cs, features, i):
@@ -156,6 +225,8 @@ def plot_original_features(cs, features, i):
     plot_3d_shape("sphere", cs.get_sphere_coords(), shading=selected_feature_raw)
     plot_3d_shape("cube", cs.get_cube_coords(), shading=selected_feature_raw)
     plot_flat_cube(cs.get_cube_coords(), shading=selected_feature_raw)
+    plot_flat_panel(cs.get_cube_coords(), shading=selected_feature_raw)
+    plot_polar(cs.get_sphere_coords(), shading=selected_feature_raw)
 
 
 def plot_padded_panels(panel_tensors, edge_len, pad_width, label_cells, title):
@@ -206,9 +277,9 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     """Based on the input data to the GAN and the output from the generator, plot a single panel for the first 4 HRTFs
     in the batch, at a given freq_index
     """
-    lr_selected = lr.detach().cpu()[:ncol, freq_index, :, :]
-    sr_selected = sr.detach().cpu()[:ncol, freq_index, :, :]
-    hr_selected = hr.detach().cpu()[:ncol, freq_index, :, :]
+    lr_selected = lr.detach().cpu()[:ncol, freq_index, 0, :, :]
+    sr_selected = sr.detach().cpu()[:ncol, freq_index, 0, :, :]
+    hr_selected = hr.detach().cpu()[:ncol, freq_index, 0, :, :]
     min_magnitude = min((torch.min(lr_selected), torch.min(sr_selected), torch.min(hr_selected)))
     max_magnitude = max((torch.max(lr_selected), torch.max(sr_selected), torch.max(hr_selected)))
 

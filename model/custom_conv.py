@@ -32,6 +32,98 @@ _scalar_or_tuple_2_t = Union[T, Tuple[T, T]]
 _size_2_t = _scalar_or_tuple_2_t[int]
 
 
+class CubeSpherePadding2D(Module):
+    """
+    Pads the input cubed sphere tensor according to adjacent panels. The requirements for this layer are as follows:
+    - The input data is 5-dimensional (batch, channels, 5, height, width)
+    - The last panel is the top panel
+
+    Adapted from CubeSpherePadding2D by @jweyn
+
+    Args:
+        padding (int): Width of padding on each cube sphere panel
+    """
+    __constants__ = ['padding']
+    padding: int
+
+    def __init__(self, padding: int) -> None:
+        super(CubeSpherePadding2D, self).__init__()
+        self.padding = padding
+
+    def forward(self, inputs: Tensor) -> Tensor:
+        p = self.padding
+
+        # Pad the equatorial upper/lower boundaries and the polar upper/lower boundaries
+        out = [
+            # Panel 0
+            torch.unsqueeze(
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 0, :, 0], 3), p)) +
+                          [inputs[:, :, 0],
+                           inputs[:, :, 4, :, :p]], dim=3), 2
+            ),
+            # Panel 1
+            torch.unsqueeze(
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 1, :, 0], 3), p)) +
+                          [inputs[:, :, 1],
+                           torch.transpose(torch.flip(inputs[:, :, 4, -p:, :], dims=[2]), dim0=2, dim1=3)], dim=3), 2
+            ),
+            # Panel 2
+            torch.unsqueeze(
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 2, :, 0], 3), p)) +
+                          [inputs[:, :, 2],
+                           torch.flip(inputs[:, :, 4, :, -p:], dims=[2, 3])], dim=3), 2
+            ),
+            # Panel 3
+            torch.unsqueeze(
+                torch.cat(list(repeat(torch.unsqueeze(inputs[:, :, 3, :, 0], 3), p)) +
+                          [inputs[:, :, 3],
+                           torch.transpose(torch.flip(inputs[:, :, 4, :p, :], dims=[3]), dim0=2, dim1=3)], dim=3), 2
+            ),
+            # Panel 4 (top)
+            torch.unsqueeze(
+                torch.cat([inputs[:, :, 0, :, -p:],
+                           inputs[:, :, 4],
+                           torch.flip(inputs[:, :, 2, :, -p:], dims=[2, 3])], dim=3), 2
+            )
+        ]
+
+        out1 = torch.cat(out, dim=2)
+        del out
+
+        # Pad the equatorial periodic lateral boundaries and the polar left/right boundaries
+        out = []
+
+        # Panel 0
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 3, -p:, :],
+                                              out1[:, :, 0],
+                                              out1[:, :, 1, :p, :]], dim=2), 2))
+        # Panel 1
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 0, -p:, :],
+                                              out1[:, :, 1],
+                                              out1[:, :, 2, :p, :]], dim=2), 2))
+        # Panel 2
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 1, -p:, :],
+                                              out1[:, :, 2],
+                                              out1[:, :, 3, :p, :]], dim=2), 2))
+        # Panel 3
+        out.append(torch.unsqueeze(torch.cat([out1[:, :, 2, -p:, :],
+                                              out1[:, :, 3],
+                                              out1[:, :, 0, :p, :]], dim=2), 2))
+        # Panel 4 (top)
+        out.append(torch.unsqueeze(
+            torch.cat([torch.transpose(torch.flip(out[3][:, :, 0, :, -2 * p:-p], dims=[2]), dim0=2, dim1=3),
+                       out1[:, :, 4],
+                       torch.transpose(torch.flip(out[1][:, :, 0, :, -2 * p:-p], dims=[3]), dim0=2, dim1=3)], dim=2),
+            2)
+        )
+
+        del out1
+        outputs = torch.cat(out, dim=2)
+        del out
+
+        return outputs
+
+
 class _ConvNd(Module):
     __constants__ = ['stride', 'padding', 'dilation',
                      'padding_mode', 'output_padding', 'in_channels',
@@ -135,12 +227,19 @@ class _ConvNd(Module):
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
         # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
         # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
-        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
-        if self.bias is not None:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+        init.kaiming_uniform_(self.equatorial_weight, a=math.sqrt(5))
+        if self.equatorial_bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.equatorial_weight)
             if fan_in != 0:
                 bound = 1 / math.sqrt(fan_in)
-                init.uniform_(self.bias, -bound, bound)
+                init.uniform_(self.equatorial_bias, -bound, bound)
+
+        init.kaiming_uniform_(self.polar_weight, a=math.sqrt(5))
+        if self.polar_bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.polar_weight)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                init.uniform_(self.polar_bias, -bound, bound)
 
     def extra_repr(self):
         s = ('{in_channels}, {out_channels}, kernel_size={kernel_size}'
@@ -271,40 +370,43 @@ class CubeSphereConv2D(_ConvNd):
     def _conv_forward(self, input: Tensor, equatorial_weight: Tensor, polar_weight: Tensor,
                       equatorial_bias: Optional[Tensor], polar_bias: Optional[Tensor]):
         outputs = []
-
         if self.padding_mode != 'zeros':
             # Equatorial panels
             for p in range(4):
                 outputs.append(
-                    F.conv2d(F.pad(input[:, :, p, :, :], self._reversed_padding_repeated_twice, mode=self.padding_mode),
-                             equatorial_weight, equatorial_bias, self.stride,
-                             _pair(0), self.dilation, self.groups)
+                    torch.unsqueeze(
+                        F.conv2d(
+                            F.pad(input[:, :, p, :, :], self._reversed_padding_repeated_twice, mode=self.padding_mode),
+                            equatorial_weight, equatorial_bias, self.stride,
+                            _pair(0), self.dilation, self.groups), 2)
                 )
 
             # Top panel
             outputs.append(
-                F.conv2d(F.pad(input[:, :, 4, :, :], self._reversed_padding_repeated_twice, mode=self.padding_mode),
-                         polar_weight, polar_bias, self.stride,
-                         _pair(0), self.dilation, self.groups)
+                torch.unsqueeze(
+                    F.conv2d(F.pad(input[:, :, 4, :, :], self._reversed_padding_repeated_twice, mode=self.padding_mode),
+                             polar_weight, polar_bias, self.stride,
+                             _pair(0), self.dilation, self.groups), 2)
             )
 
         else:
             # Equatorial panels
             for p in range(4):
                 outputs.append(
-                    F.conv2d(input[:, :, p, :, :], equatorial_weight, equatorial_bias, self.stride,
-                             self.padding, self.dilation, self.groups)
+                    torch.unsqueeze(
+                        F.conv2d(input[:, :, p, :, :], equatorial_weight, equatorial_bias, self.stride,
+                                 self.padding, self.dilation, self.groups), 2)
                 )
 
             # Top panel
             outputs.append(
-                F.conv2d(input[:, :, 4, :, :], polar_weight, polar_bias, self.stride,
-                         self.padding, self.dilation, self.groups)
+                torch.unsqueeze(
+                    F.conv2d(input[:, :, 4, :, :], polar_weight, polar_bias, self.stride,
+                             self.padding, self.dilation, self.groups), 2)
             )
 
-        return torch.cat(outputs)
+        return torch.cat(outputs, 2)
 
     def forward(self, input: Tensor) -> Tensor:
         return self._conv_forward(input, self.equatorial_weight, self.polar_weight,
                                   self.equatorial_bias, self.polar_bias)
-

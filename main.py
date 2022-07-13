@@ -9,7 +9,7 @@ from config import Config
 from model.train import train
 from model.util import load_dataset
 from preprocessing.cubed_sphere import CubedSphere
-from preprocessing.utils import interpolate_fft_pad, generate_euclidean_cube, load_data
+from preprocessing.utils import interpolate_fft, generate_euclidean_cube, load_data
 from model import util
 
 PI_4 = np.pi / 4
@@ -53,13 +53,13 @@ def main(mode, tag, using_hpc):
         train_size = int(len(set(ds.subject_ids)) * config.train_samples_ratio)
         train_sample = np.random.choice(ds.subject_ids, train_size)
         # collect all train_hrtfs to get mean and sd
-        train_hrtfs = torch.empty(size=(2*train_size, 5, 20, 20, 128))
+        train_hrtfs = torch.empty(size=(2 * train_size, 5, config.hrtf_size, config.hrtf_size, 128))
         j = 0
         for i in range(len(ds)):
             if i % 10 == 0:
                 print(f"HRTF {i} out of {len(ds)} ({round(100 * i / len(ds))}%)")
-            clean_hrtf = interpolate_fft_pad(cs, ds[i]['features'], sphere, sphere_triangles, sphere_coeffs, cube,
-                                             config.hrtf_size, config.pad_width)
+            clean_hrtf = interpolate_fft(cs, ds[i]['features'], sphere, sphere_triangles, sphere_coeffs, cube,
+                                         config.hrtf_size)
             # save cleaned hrtfdata
             if ds[i]['group'] in train_sample:
                 projected_dir = "projected_data/train/"
