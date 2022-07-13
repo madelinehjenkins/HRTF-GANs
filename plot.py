@@ -47,6 +47,43 @@ def plot_3d_shape(shape, coordinates, shading=None):
     plt.show()
 
 
+def plot_flat_panel(cube_coords, shading=None):
+    """Plot points from a single panel of a cubed sphere in its flattened form
+
+    :param cube_coords: A list of coordinates to plot in the form (panel, x, y) for cubed spheres
+    :param shading: A list of values equal in length to the number of coordinates that is used for shading the points
+    """
+    fig, ax = plt.subplots()
+
+    # Format data.
+    x, y = [], []
+    mask = []
+
+    for panel, p, q in cube_coords:
+        if panel == 1:
+            if not np.isnan(p) and not np.isnan(q):
+                mask.append(True)
+                x.append(p)
+                y.append(q)
+            else:
+                mask.append(False)
+        else:
+            mask.append(False)
+
+    x, y = np.asarray(x), np.asarray(y)
+
+    if shading is not None:
+        shading = list(itertools.compress(shading, mask))
+
+    # Plot the surface.
+    sc = ax.scatter(x, y, c=shading, s=50,
+                    linewidth=0, antialiased=False, vmin=-0.04, vmax=0.03)
+    plt.colorbar(sc)
+
+    fig.tight_layout()
+    plt.show()
+
+
 def plot_flat_cube(cube_coords, shading=None):
     """Plot points from cubed sphere in its flattened form
 
@@ -104,6 +141,36 @@ def plot_flat_cube(cube_coords, shading=None):
 
     fig.tight_layout()
     fig.set_size_inches(9, 4)
+    plt.show()
+
+
+def plot_polar(sphere_coords, shading=None):
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+
+    # Format data.
+    theta, r = [], []
+    mask = []
+
+    for elevation, azimuth in sphere_coords:
+        if elevation is not None and azimuth is not None and elevation < 0:
+            mask.append(True)
+            theta.append(azimuth)
+            r.append(np.pi + elevation)
+        else:
+            mask.append(False)
+
+    if shading is not None:
+        shading = list(itertools.compress(shading, mask))
+
+    sc = ax.scatter(theta, r, c=shading, s=5)
+    plt.colorbar(sc)
+    ax.set_rmax(np.pi)
+    ax.set_rmin(0)
+    ax.set_rticks([2, 2.5, 3])  # Less radial ticks
+    ax.set_rlabel_position(-22.5)  # Move radial labels away from plotted line
+    ax.grid(True)
+
+    ax.set_title("A plot of the bottom of the sphere", va='bottom')
     plt.show()
 
 

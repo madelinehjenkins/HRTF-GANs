@@ -8,7 +8,6 @@ import torch
 from preprocessing.barycentric_calcs import calc_barycentric_coordinates, get_triangle_vertices
 from preprocessing.convert_coordinates import convert_cube_to_sphere
 from preprocessing.KalmanFilter import KalmanFilter
-from preprocessing.padding import pad_cubed_sphere
 
 PI_4 = np.pi / 4
 
