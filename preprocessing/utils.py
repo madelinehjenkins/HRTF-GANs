@@ -84,7 +84,8 @@ def calc_interpolated_feature(triangle_vertices, coeffs, all_coords, subject_fea
     features = []
     for p in triangle_vertices:
         features_p = get_feature_for_point(p[0], p[1], all_coords, subject_features)
-        features.append(features_p)
+        features_no_ITD = remove_itd(features_p, 10, 256)
+        features.append(features_no_ITD)
 
     # based on equation 6 in "3D Tune-In Toolkit: An open-source library for real-time binaural spatialisation"
     interpolated_feature = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
