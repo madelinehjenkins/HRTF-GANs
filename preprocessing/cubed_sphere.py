@@ -7,6 +7,16 @@ from preprocessing.convert_coordinates import convert_sphere_to_cube
 
 
 class CubedSphere(object):
+    # diagram of unfolded cube, with panel indices
+    #             _______
+    #            |       |
+    #            |   4   |
+    #     _______|_______|_______ _______
+    #    |       |       |       |       |
+    #    |   3   |   0   |   1   |   2   |
+    #    |_______|_______|_______|_______|
+    # In all cases, low values of x and y are situated in lower left of the unfolded sphere
+
     def __init__(self, sphere_coords):
         # initiate two lists of tuples, one will store (elevation, azimuth) for every measurement point
         # the other will store (elevation_index, azimuth_index) for every measurement point
