@@ -1,3 +1,5 @@
+import scipy
+
 from model.util import *
 from model.model import *
 
@@ -9,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import time
 
-from plot import plot_panel, plot_losses
+from plot import plot_panel, plot_losses, plot_magnitude_spectrums
 
 
 def train(config, train_prefetcher, overwrite=True):
@@ -21,6 +23,11 @@ def train(config, train_prefetcher, overwrite=True):
     """
     # Calculate how many batches of data are in each Epoch
     batches = len(train_prefetcher)
+
+    # get list of positive frequencies of HRTF for plotting magnitude spectrum
+    hrir_samplerate = 48000.0
+    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
+    pos_freqs = all_freqs[all_freqs >= 0]
 
     # Assign torch device
     ngpu = config.ngpu
@@ -140,6 +147,10 @@ def train(config, train_prefetcher, overwrite=True):
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
 
                     plot_panel(lr, sr, hr, batch_index, epoch, path, ncol=4, freq_index=10)
+
+                    magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
+                    magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
+                    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, path)
                     progress(batch_index, batches, epoch, num_epochs,
                              timed=np.mean(times))
                     times = []
