@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import os
 
@@ -83,3 +84,24 @@ def progress(i, batches, n, num_epochs, timed):
     """
     message = 'batch {} of {}, epoch {} of {}'.format(i, batches, n, num_epochs)
     print(f"Progress: {message}, Time per iter: {timed}")
+
+
+def spectral_distortion_inner(input_spectrum, target_spectrum):
+    numerator = np.abs(target_spectrum)
+    denominator = np.abs(input_spectrum)
+    return np.average((20*np.log10(numerator/denominator))**2)
+
+
+def spectral_distortion_metric(input, target):
+    num_panels = input.size(0)
+    height = input.size(1)
+    width = input.size(2)
+    total_positions = num_panels*height*width
+
+    total_all_positions = 0
+    for i in range(num_panels):
+        for j in range(height):
+            for k in range(width):
+                total_all_positions += np.sqrt(spectral_distortion_inner(input[i, j, k], target[i, j, k]))
+
+    return total_all_positions / total_positions

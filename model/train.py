@@ -54,7 +54,7 @@ def train(config, train_prefetcher, overwrite=True):
 
     # Define loss functions
     adversarial_criterion = nn.BCEWithLogitsLoss()
-    content_criterion = nn.MSELoss()
+    content_criterion = spectral_distortion_metric
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
