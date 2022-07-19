@@ -123,6 +123,9 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
 
+                new_loss = content_criterion(sr, hr)
+                old_loss = nn.MSELoss()(sr, hr)
+                print(f"old loss: {old_loss}, new loss: {new_loss}")
                 content_loss_G = config.content_weight * content_criterion(sr, hr)
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
                 # Calculate the generator total loss value and backprop
