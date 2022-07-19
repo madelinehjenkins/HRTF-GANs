@@ -146,13 +146,11 @@ def train(config, train_prefetcher, overwrite=True):
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
 
-                    plot_panel(lr, sr, hr, batch_index, epoch, path, ncol=4, freq_index=10)
-
                     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
                     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
                     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, path)
-                    progress(batch_index, batches, epoch, num_epochs,
-                             timed=np.mean(times))
+
+                    progress(batch_index, batches, epoch, num_epochs, timed=np.mean(times))
                     times = []
 
             # Preload the next batch of data
