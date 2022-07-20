@@ -55,6 +55,7 @@ def train(config, train_prefetcher, overwrite=True):
     # Define loss functions
     adversarial_criterion = nn.BCEWithLogitsLoss()
     content_criterion = spectral_distortion_metric
+    # content_criterion = nn.MSELoss()
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
@@ -130,7 +131,9 @@ def train(config, train_prefetcher, overwrite=True):
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
+                print(f"content_loss: {content_loss_G}, adversarial_loss: {adversarial_loss_G}, total: {loss_G}")
                 loss_G.backward()
+                print(f"computed gradient: {netG.weight.grad}")
                 train_loss_G += loss_G
 
                 optG.step()
