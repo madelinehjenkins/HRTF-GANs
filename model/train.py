@@ -131,6 +131,7 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
+                # print(f"computed gradient: {netG.weight.grad}")
                 train_loss_G += loss_G
 
                 optG.step()

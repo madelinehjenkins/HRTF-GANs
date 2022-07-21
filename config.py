@@ -34,7 +34,7 @@ class Config:
         self.lr_gen = 0.0001
         self.lr_dis = 0.0001
         # how often to train the generator
-        self.critic_iters = 4
+        self.critic_iters = 1
 
         # Loss function weight
         self.content_weight = 1.0
