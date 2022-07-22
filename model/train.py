@@ -150,6 +150,7 @@ def train(config, train_prefetcher, overwrite=True):
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
 
+                    # TODO: either name this plot differently for each epoch, or only create at the end
                     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
                     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
                     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, path)

@@ -361,6 +361,7 @@ def plot_grad_flow(named_parameters, path):
 
     Usage: Plug this function in Trainer class after loss.backwards() as
     "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+    plt.figure('grad_flow')
     ave_grads = []
     max_grads = []
     layers = []
@@ -383,4 +384,5 @@ def plot_grad_flow(named_parameters, path):
     plt.legend([Line2D([0], [0], color="c", lw=4),
                 Line2D([0], [0], color="b", lw=4),
                 Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+    plt.tight_layout()
     plt.savefig(f'{path}/grad_flow.png')
