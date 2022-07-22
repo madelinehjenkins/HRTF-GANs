@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import time
 
-from plot import plot_panel, plot_losses, plot_magnitude_spectrums
+from plot import plot_panel, plot_losses, plot_magnitude_spectrums, plot_grad_flow
 
 
 def train(config, train_prefetcher, overwrite=True):
@@ -125,13 +125,13 @@ def train(config, train_prefetcher, overwrite=True):
 
                 new_loss = content_criterion(sr, hr)
                 old_loss = nn.MSELoss()(sr, hr)
-                print(f"old loss: {old_loss}, new loss: {new_loss}")
+                # print(f"old loss: {old_loss}, new loss: {new_loss}")
                 content_loss_G = config.content_weight * content_criterion(sr, hr)
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
-                # print(f"computed gradient: {netG.weight.grad}")
+                plot_grad_flow(netD.named_parameters(), path)
                 train_loss_G += loss_G
 
                 optG.step()
