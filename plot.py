@@ -325,9 +325,11 @@ def plot_losses(train_losses_d, train_losses_g, path):
     plt.savefig(f'{path}/loss_curves.png')
 
 
-def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, path,
+def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, path,
                              title="Magnitude spectrum, horizontal plane"):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
+
+    title += " (" + ear + " ear)"
 
     # keys refer to the locations of the subplots, values are the indices in the cubed sphere
     plot_locs = {(0, 0): (1, 0, 8), (0, 1): (0, 8, 8), (0, 2): (0, 0, 8),
@@ -339,13 +341,16 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         spherical_coordinates = convert_cube_indices_to_spherical(indices[0], indices[1], indices[2], 16)
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
-        axs[row, col].plot(frequencies, magnitudes_real[indices[0]][indices[1]][indices[2]], label="Real HRTF")
-        axs[row, col].plot(frequencies, magnitudes_interpolated[indices[0]][indices[1]][indices[2]],
+        axs[row, col].plot(frequencies, np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]]),
+                           label="Real HRTF")
+        axs[row, col].plot(frequencies, np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]]),
                            label="GAN interpolated HRTF")
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')
         axs[row, col].label_outer()
+        axs[row, col].yaxis.set_ticks([])
+        axs[row, col].set_xscale('log')
 
     axs[0, 1].legend(loc=(0, -0.5))
     axs[1, 1].axis('off')

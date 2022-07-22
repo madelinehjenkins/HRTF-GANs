@@ -123,9 +123,6 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
 
-                new_loss = content_criterion(sr, hr)
-                old_loss = nn.MSELoss()(sr, hr)
-                # print(f"old loss: {old_loss}, new loss: {new_loss}")
                 content_loss_G = config.content_weight * content_criterion(sr, hr)
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
                 # Calculate the generator total loss value and backprop
@@ -153,7 +150,8 @@ def train(config, train_prefetcher, overwrite=True):
                     # TODO: either name this plot differently for each epoch, or only create at the end
                     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
                     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-                    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, path)
+                    ear_label = "unknown"
+                    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, ear_label, path)
 
                     progress(batch_index, batches, epoch, num_epochs, timed=np.mean(times))
                     times = []
