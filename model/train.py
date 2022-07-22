@@ -131,7 +131,7 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
-                plot_grad_flow(netD.named_parameters(), path)
+                plot_grad_flow(netG.named_parameters(), path)
                 train_loss_G += loss_G
 
                 optG.step()
