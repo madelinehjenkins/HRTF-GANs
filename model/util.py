@@ -102,8 +102,10 @@ def spectral_distortion_metric(input, target):
     for i in range(num_panels):
         for j in range(height):
             for k in range(width):
-                average_over_frequencies = spectral_distortion_inner(input.detach().cpu()[i, j, k],
-                                                                     target.detach().cpu()[i, j, k])
+                average_over_frequencies = spectral_distortion_inner(input[i, j, k],
+                                                                     target[i, j, k])
+                # average_over_frequencies = spectral_distortion_inner(input.detach().cpu()[i, j, k],
+                #                                                      target.detach().cpu()[i, j, k])
                 total_all_positions += torch.sqrt(average_over_frequencies)
 
     return total_all_positions / total_positions
