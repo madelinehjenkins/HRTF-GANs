@@ -87,8 +87,8 @@ def progress(i, batches, n, num_epochs, timed):
 
 
 def spectral_distortion_inner(input_spectrum, target_spectrum):
-    numerator = torch.abs(target_spectrum)
-    denominator = torch.abs(input_spectrum)
+    numerator = target_spectrum
+    denominator = input_spectrum
     return torch.mean((20 * torch.log10(numerator / denominator)) ** 2)
 
 
