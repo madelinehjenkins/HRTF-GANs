@@ -35,6 +35,8 @@ class TrainValidHRTFDataset(Dataset):
     def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
         # Read a batch of hrtf data
         with open(self.hrtf_file_names[batch_index], "rb") as file:
+            print(f"batch index: {batch_index}")
+            print(f"hrtf_file_name: {self.hrtf_file_names[batch_index]}")
             hrtf = pickle.load(file)
 
         # hrtf processing operations

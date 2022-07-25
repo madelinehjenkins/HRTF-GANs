@@ -345,11 +345,11 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
                            label="Real HRTF")
         axs[row, col].plot(frequencies, np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]]),
                            label="GAN interpolated HRTF")
-        if any(magnitudes_real[indices[0]][indices[1]][indices[2]] < 0) or any(magnitudes_interpolated[indices[0]][indices[1]][indices[2]] < 0):
-            print("\n real mags:")
-            print(magnitudes_real[indices[0]][indices[1]][indices[2]] < 0)
-            print("\n interpolated mags:")
-            print(magnitudes_interpolated[indices[0]][indices[1]][indices[2]] < 0)
+        # if any(magnitudes_real[indices[0]][indices[1]][indices[2]] < 0) or any(magnitudes_interpolated[indices[0]][indices[1]][indices[2]] < 0):
+        #     print("\n real mags:")
+        #     print(magnitudes_real[indices[0]][indices[1]][indices[2]])
+        #     print("\n interpolated mags:")
+        #     print(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')

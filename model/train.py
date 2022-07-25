@@ -151,6 +151,8 @@ def train(config, train_prefetcher, overwrite=True):
 
                     # TODO: either name this plot differently for each epoch, or only create at the end
                     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
+                    print(f"hr shape: {hr.shape}")
+                    print(f"mag real shape: {magnitudes_real.shape}")
                     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
                     ear_label = "TODO"
                     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, ear_label, path)
