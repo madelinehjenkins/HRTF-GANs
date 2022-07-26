@@ -127,8 +127,6 @@ def train(config, train_prefetcher, overwrite=True):
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
-                print(f"cont + adv = total loss: {content_loss_G} + {adversarial_loss_G} = {loss_G}")
-                # print(f"cont + adv = total loss: {round(content_loss_G, 3)} + {round(adversarial_loss_G, 3)} = {round(loss_G, 3)}")
                 loss_G.backward()
                 plot_grad_flow(netG.named_parameters(), path)
                 train_loss_G += loss_G
@@ -149,15 +147,6 @@ def train(config, train_prefetcher, overwrite=True):
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
 
-                    # TODO: either name this plot differently for each epoch, or only create at the end
-                    magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
-                    print(f"hr shape: {hr.shape}")
-                    print(f"mag real shape: {magnitudes_real.shape}")
-                    magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-                    ear_label = "TODO"
-                    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                                             ear_label, epoch, path)
-
                     progress(batch_index, batches, epoch, num_epochs, timed=np.mean(times))
                     times = []
 
@@ -173,5 +162,12 @@ def train(config, train_prefetcher, overwrite=True):
         print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
 
     plot_losses(train_losses_D, train_losses_G, path)
+
+    # create magnitude spectrum plot
+    magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
+    magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
+    ear_label = "TODO"
+    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
+                             ear_label, epoch, path)
 
     print("TRAINING FINISHED")
