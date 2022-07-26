@@ -156,6 +156,9 @@ class Generator(nn.Module):
         out = torch.add(out1, out2)
         out = self.upsampling(out)
         out = self.conv_block3(out)
+
+        out = torch.clamp_(out, min=0.0, max=None)
+
         return out
 
     def _initialize_weights(self) -> None:
