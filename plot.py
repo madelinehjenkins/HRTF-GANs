@@ -342,19 +342,14 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
         if log_scale_magnitudes:
-            magnitudes_real_plot = np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
-            magnitudes_interpolated_plot = np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+            magnitudes_real_plot = 10*np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
+            magnitudes_interpolated_plot = 10*np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
         else:
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
 
         axs[row, col].plot(frequencies, magnitudes_real_plot, label="Real HRTF")
         axs[row, col].plot(frequencies, magnitudes_interpolated_plot, label="GAN interpolated HRTF")
-        # if torch.any(magnitudes_real[indices[0]][indices[1]][indices[2]] < 0) or torch.any(magnitudes_interpolated[indices[0]][indices[1]][indices[2]] < 0):
-        #     print("\n real mags:")
-        #     print(magnitudes_real[indices[0]][indices[1]][indices[2]])
-        #     print("\n interpolated mags:")
-        #     print(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')
@@ -376,7 +371,7 @@ def plot_grad_flow(named_parameters, path):
 
     Usage: Plug this function in Trainer class after loss.backwards() as
     "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
-    plt.figure('grad_flow', figsize=(18, 6))
+    plt.figure('grad_flow', figsize=(18, 10))
     ave_grads = []
     max_grads = []
     layers = []
@@ -385,7 +380,7 @@ def plot_grad_flow(named_parameters, path):
             if len(n) < 12:
                 layers.append(n)
             else:
-                layers.append(n[:4] + "..." + n[-4:])
+                layers.append(n[:6] + "..." + n[-6:])
             ave_grads.append(p.grad.abs().mean().cpu())
             max_grads.append(p.grad.abs().max().cpu())
 
@@ -394,7 +389,7 @@ def plot_grad_flow(named_parameters, path):
     plt.hlines(0, 0, len(ave_grads) + 1, lw=2, color="k")
     plt.xticks(range(0, len(ave_grads), 1), layers, rotation="vertical")
     plt.xlim(left=0, right=len(ave_grads))
-    plt.ylim(bottom=-0.001, top=0.02)  # zoom in on the lower gradient regions
+    plt.ylim(bottom=-0.001, top=0.05)  # zoom in on the lower gradient regions
     plt.xlabel("Layers")
     plt.ylabel("average gradient")
     plt.title("Gradient flow")

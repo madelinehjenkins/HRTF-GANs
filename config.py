@@ -30,7 +30,7 @@ class Config:
         # Training hyperparams
         self.batch_size = 32
         self.num_workers = 4
-        self.num_epochs = 3  # was originally 250
+        self.num_epochs = 5  # was originally 250
         self.lr_gen = 0.0001
         self.lr_dis = 0.0001
         # how often to train the generator
