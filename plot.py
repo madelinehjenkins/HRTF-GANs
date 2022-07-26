@@ -326,7 +326,7 @@ def plot_losses(train_losses_d, train_losses_g, path):
 
 
 def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, epoch, path,
-                             title="Magnitude spectrum, horizontal plane"):
+                             log_scale_magnitudes = True, title="Magnitude spectrum, horizontal plane"):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
 
     title += " (" + ear + " ear)"
@@ -341,14 +341,15 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         spherical_coordinates = convert_cube_indices_to_spherical(indices[0], indices[1], indices[2], 16)
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
-        axs[row, col].plot(frequencies, magnitudes_real[indices[0]][indices[1]][indices[2]],
-                           label="Real HRTF")
-        axs[row, col].plot(frequencies, magnitudes_interpolated[indices[0]][indices[1]][indices[2]],
-                           label="GAN interpolated HRTF")
-        # axs[row, col].plot(frequencies, np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]]),
-        #                    label="Real HRTF")
-        # axs[row, col].plot(frequencies, np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]]),
-        #                    label="GAN interpolated HRTF")
+        if log_scale_magnitudes:
+            magnitudes_real_plot = np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
+            magnitudes_interpolated_plot = np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+        else:
+            magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
+            magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
+
+        axs[row, col].plot(frequencies, magnitudes_real_plot, label="Real HRTF")
+        axs[row, col].plot(frequencies, magnitudes_interpolated_plot, label="GAN interpolated HRTF")
         # if torch.any(magnitudes_real[indices[0]][indices[1]][indices[2]] < 0) or torch.any(magnitudes_interpolated[indices[0]][indices[1]][indices[2]] < 0):
         #     print("\n real mags:")
         #     print(magnitudes_real[indices[0]][indices[1]][indices[2]])
