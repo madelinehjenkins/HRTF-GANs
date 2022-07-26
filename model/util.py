@@ -25,10 +25,15 @@ def initialise_folders(tag, overwrite):
             pass
 
 
-def load_dataset(config, mean, std) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
+def load_dataset(config, mean=None, std=None) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
+
     # define transforms
-    transform = transforms.Normalize(mean=mean, std=std)
+    if mean is None or std is None:
+        transform = None
+    else:
+        transform = transforms.Normalize(mean=mean, std=std)
+
     # Load train, test and valid datasets
     train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train",
                                            transform=transform)
