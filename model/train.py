@@ -8,10 +8,9 @@ import torch.optim as optim
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 import time
 
-from plot import plot_panel, plot_losses, plot_magnitude_spectrums, plot_grad_flow
+from plot import plot_losses, plot_magnitude_spectrums, plot_grad_flow
 
 
 def train(config, train_prefetcher, overwrite=True):
