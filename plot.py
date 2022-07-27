@@ -342,8 +342,8 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
         if log_scale_magnitudes:
-            magnitudes_real_plot = 10*np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
-            magnitudes_interpolated_plot = 10*np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+            magnitudes_real_plot = 20*np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
+            magnitudes_interpolated_plot = 20*np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
         else:
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
@@ -354,7 +354,6 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')
         axs[row, col].label_outer()
-        axs[row, col].yaxis.set_ticks([])
         axs[row, col].set_xscale('log')
 
     axs[0, 1].legend(loc=(0, -0.5))
