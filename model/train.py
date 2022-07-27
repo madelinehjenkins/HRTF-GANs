@@ -170,6 +170,8 @@ def train(config, train_prefetcher, overwrite=True):
         train_losses_G_adversarial.append(train_loss_G_adversarial / len(train_prefetcher))
         train_losses_G_content.append(train_loss_G_content / len(train_prefetcher))
         print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
+        print(f"Average epoch loss, D_real: {train_losses_D_hr[-1]}, D_fake: {train_losses_D_sr[-1]}")
+        print(f"Average epoch loss, G_adv: {train_losses_G_adversarial[-1]}, train_losses_G_content: {train_losses_G_content[-1]}")
 
     plot_losses(train_losses_D, train_losses_G,
                 label_1='Discriminator loss', label_2='Generator loss',
