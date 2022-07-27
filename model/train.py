@@ -24,11 +24,6 @@ def train(config, train_prefetcher, overwrite=True):
     # Calculate how many batches of data are in each Epoch
     batches = len(train_prefetcher)
 
-    # get list of positive frequencies of HRTF for plotting magnitude spectrum
-    hrir_samplerate = 48000.0
-    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
-    pos_freqs = all_freqs[all_freqs >= 0]
-
     # Assign torch device
     ngpu = config.ngpu
     path = config.path
@@ -162,6 +157,11 @@ def train(config, train_prefetcher, overwrite=True):
         print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
 
     plot_losses(train_losses_D, train_losses_G, path)
+
+    # get list of positive frequencies of HRTF for plotting magnitude spectrum
+    hrir_samplerate = 48000.0
+    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
+    pos_freqs = all_freqs[all_freqs >= 0]
 
     # create magnitude spectrum plot
     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
