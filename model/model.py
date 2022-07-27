@@ -157,7 +157,7 @@ class Generator(nn.Module):
         out = self.upsampling(out)
         out = self.conv_block3(out)
 
-        out = torch.clamp_(out, min=1e-20, max=None)
+        out = torch.clamp_(out, min=10e-20, max=None)
 
         return out
 

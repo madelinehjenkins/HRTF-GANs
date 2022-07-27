@@ -38,7 +38,7 @@ class Config:
         self.critic_iters = 4
 
         # Loss function weight
-        self.content_weight = 1.0
+        self.content_weight = 0.1
         self.adversarial_weight = 0.001
 
         # betas for Adam optimizer
