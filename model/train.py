@@ -55,12 +55,20 @@ def train(config, train_prefetcher, overwrite=True):
         netD.load_state_dict(torch.load(f"{path}/Disc.pt"))
 
     train_losses_G = []
+    train_losses_G_adversarial = []
+    train_losses_G_content = []
     train_losses_D = []
+    train_losses_D_hr = []
+    train_losses_D_sr = []
 
     for epoch in range(num_epochs):
         times = []
-        train_loss_D = 0.
         train_loss_G = 0.
+        train_loss_G_adversarial = 0.
+        train_loss_G_content = 0.
+        train_loss_D = 0.
+        train_loss_D_hr = 0.
+        train_loss_D_sr = 0.
 
         # Initialize the number of data batches to print logs on the terminal
         batch_index = 0
@@ -105,6 +113,8 @@ def train(config, train_prefetcher, overwrite=True):
             # Compute the discriminator loss
             loss_D = loss_D_hr + loss_D_sr
             train_loss_D += loss_D
+            train_loss_D_hr += loss_D_hr
+            train_loss_D_sr += loss_D_sr
 
             # Update D
             optD.step()
@@ -124,6 +134,8 @@ def train(config, train_prefetcher, overwrite=True):
                 loss_G.backward()
                 plot_grad_flow(netG.named_parameters(), path)
                 train_loss_G += loss_G
+                train_loss_G_adversarial += adversarial_loss_G
+                train_loss_G_content += content_loss_G
 
                 optG.step()
 
@@ -152,10 +164,22 @@ def train(config, train_prefetcher, overwrite=True):
             batch_index += 1
 
         train_losses_D.append(train_loss_D / len(train_prefetcher))
+        train_losses_D_hr.append(train_loss_D_hr / len(train_prefetcher))
+        train_losses_D_sr.append(train_loss_D_sr / len(train_prefetcher))
         train_losses_G.append(train_loss_G / len(train_prefetcher))
+        train_losses_G_adversarial.append(train_loss_G_adversarial / len(train_prefetcher))
+        train_losses_G_content.append(train_loss_G_content / len(train_prefetcher))
         print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
 
-    plot_losses(train_losses_D, train_losses_G, path)
+    plot_losses(train_losses_D, train_losses_G,
+                label_1='Discriminator loss', label_2='Generator loss',
+                path=path, filename='loss_curves')
+    plot_losses(train_losses_D_hr, train_losses_D_sr,
+                label_1='Discriminator loss, real', label_2='Discriminator loss, fake',
+                path=path, filename='loss_curves_D')
+    plot_losses(train_losses_G_adversarial, train_losses_G_content,
+                label_1='Generator loss, adversarial', label_2='Generator loss, content',
+                path=path, filename='loss_curves_G')
 
     # get list of positive frequencies of HRTF for plotting magnitude spectrum
     hrir_samplerate = 48000.0

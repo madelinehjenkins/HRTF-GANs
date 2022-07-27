@@ -310,19 +310,19 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     plt.close(fig)
 
 
-def plot_losses(train_losses_d, train_losses_g, path):
+def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename):
     """Plot the discriminator and generator loss over time"""
     plt.figure()
-    loss_d = [x.item() for x in train_losses_d]
-    loss_g = [x.item() for x in train_losses_g]
-    plt.plot(loss_d, label='Discriminator loss')
-    plt.plot(loss_g, label='Generator loss')
+    loss_1 = [x.item() for x in train_losses_1]
+    loss_2 = [x.item() for x in train_losses_2]
+    plt.plot(loss_1, label=label_1)
+    plt.plot(loss_2, label=label_2)
 
     plt.title("Loss Curves")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig(f'{path}/loss_curves.png')
+    plt.savefig(f'{path}/{filename}.png')
 
 
 def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, epoch, path,
