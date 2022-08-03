@@ -106,7 +106,7 @@ def train(config, train_prefetcher, overwrite=True):
 
             # train on SR hrtfs
             label.fill_(0.)
-            output = netD(sr.detach()).view(-1)
+            output = netD(sr.detach().clone()).view(-1)
             loss_D_sr = adversarial_criterion(output, label)
             loss_D_sr.backward()
 
@@ -193,6 +193,6 @@ def train(config, train_prefetcher, overwrite=True):
     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
     ear_label = "TODO"
     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                             ear_label, epoch, path)
+                             ear_label, epoch, path, log_scale_magnitudes=False)
 
     print("TRAINING FINISHED")
