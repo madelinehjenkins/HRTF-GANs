@@ -123,6 +123,7 @@ def train(config, train_prefetcher, overwrite=True):
             if batch_index % int(critic_iters) == 0:
                 # Initialize generator model gradients
                 netG.zero_grad()
+                sr = netG(lr)
                 label.fill_(1.)
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
