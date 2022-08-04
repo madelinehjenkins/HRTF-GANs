@@ -35,6 +35,11 @@ def train(config, train_prefetcher, overwrite=True):
     # Get train params
     batch_size, beta1, beta2, num_epochs, lr_gen, lr_dis, critic_iters = config.get_train_params()
 
+    # get list of positive frequencies of HRTF for plotting magnitude spectrum
+    hrir_samplerate = 48000.0
+    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
+    pos_freqs = all_freqs[all_freqs >= 0]
+
     # Define Generator network and transfer to CUDA
     netG = Generator().to(device)
     netD = Discriminator().to(device)
@@ -174,6 +179,14 @@ def train(config, train_prefetcher, overwrite=True):
         print(f"Average epoch loss, D_real: {train_losses_D_hr[-1]}, D_fake: {train_losses_D_sr[-1]}")
         print(f"Average epoch loss, G_adv: {train_losses_G_adversarial[-1]}, train_losses_G_content: {train_losses_G_content[-1]}")
 
+        # create magnitude spectrum plot every 5 epochs and last epoch
+        if epoch % 5 == 0 or epoch == (num_epochs - 1):
+            magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
+            magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
+            ear_label = "TODO"
+            plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
+                                     ear_label, epoch, path, log_scale_magnitudes=False)
+
     plot_losses(train_losses_D, train_losses_G,
                 label_1='Discriminator loss', label_2='Generator loss',
                 path=path, filename='loss_curves')
@@ -183,17 +196,5 @@ def train(config, train_prefetcher, overwrite=True):
     plot_losses(train_losses_G_adversarial, train_losses_G_content,
                 label_1='Generator loss, adversarial', label_2='Generator loss, content',
                 path=path, filename='loss_curves_G')
-
-    # get list of positive frequencies of HRTF for plotting magnitude spectrum
-    hrir_samplerate = 48000.0
-    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
-    pos_freqs = all_freqs[all_freqs >= 0]
-
-    # create magnitude spectrum plot
-    magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
-    magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-    ear_label = "TODO"
-    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                             ear_label, epoch, path, log_scale_magnitudes=False)
 
     print("TRAINING FINISHED")
