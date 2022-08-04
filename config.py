@@ -7,6 +7,7 @@ class Config:
 
     Set using HPC to true in order to use appropriate paths for HPC
     """
+
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
@@ -30,14 +31,14 @@ class Config:
         # Training hyperparams
         self.batch_size = 32
         self.num_workers = 4
-        self.num_epochs = 10  # was originally 250
+        self.num_epochs = 250  # was originally 250
         self.lr_gen = 0.0001
         self.lr_dis = 0.0001
         # how often to train the generator
         self.critic_iters = 4
 
         # Loss function weight
-        self.content_weight = 1.0
+        self.content_weight = 0.01
         self.adversarial_weight = 0.001
 
         # betas for Adam optimizer
@@ -62,6 +63,6 @@ class Config:
             j = json.load(f)
             for k, v in j.items():
                 setattr(self, k, v)
-    
+
     def get_train_params(self):
         return self.batch_size, self.beta1, self.beta2, self.num_epochs, self.lr_gen, self.lr_dis, self.critic_iters

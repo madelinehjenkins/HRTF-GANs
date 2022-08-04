@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import torch
 from matplotlib import patches
+from matplotlib.lines import Line2D
 from matplotlib.ticker import LinearLocator
 
 from preprocessing.convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian, \
@@ -309,24 +310,26 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     plt.close(fig)
 
 
-def plot_losses(train_losses_d, train_losses_g, path):
+def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename):
     """Plot the discriminator and generator loss over time"""
     plt.figure()
-    loss_d = [x.item() for x in train_losses_d]
-    loss_g = [x.item() for x in train_losses_g]
-    plt.plot(loss_d, label='Discriminator loss')
-    plt.plot(loss_g, label='Generator loss')
+    loss_1 = [x.item() for x in train_losses_1]
+    loss_2 = [x.item() for x in train_losses_2]
+    plt.plot(loss_1, label=label_1)
+    plt.plot(loss_2, label=label_2)
 
     plt.title("Loss Curves")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig(f'{path}/loss_curves.png')
+    plt.savefig(f'{path}/{filename}.png')
 
 
-def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, path,
-                             title="Magnitude spectrum, horizontal plane"):
+def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, epoch, path,
+                             log_scale_magnitudes = True, title="Magnitude spectrum, horizontal plane"):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
+
+    title += " (" + ear + " ear)"
 
     # keys refer to the locations of the subplots, values are the indices in the cubed sphere
     plot_locs = {(0, 0): (1, 0, 8), (0, 1): (0, 8, 8), (0, 2): (0, 0, 8),
@@ -338,15 +341,60 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         spherical_coordinates = convert_cube_indices_to_spherical(indices[0], indices[1], indices[2], 16)
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
-        axs[row, col].plot(frequencies, magnitudes_real[indices[0]][indices[1]][indices[2]], label="Real HRTF")
-        axs[row, col].plot(frequencies, magnitudes_interpolated[indices[0]][indices[1]][indices[2]],
-                           label="GAN interpolated HRTF")
+        if log_scale_magnitudes:
+            magnitudes_real_plot = 20*np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
+            magnitudes_interpolated_plot = 20*np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+        else:
+            magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
+            magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
+
+        axs[row, col].plot(frequencies, magnitudes_real_plot, label="Real HRTF")
+        axs[row, col].plot(frequencies, magnitudes_interpolated_plot, label="GAN interpolated HRTF")
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')
         axs[row, col].label_outer()
+        axs[row, col].set_xscale('log')
 
     axs[0, 1].legend(loc=(0, -0.5))
     axs[1, 1].axis('off')
     fig.suptitle(title)
-    plt.savefig(f'{path}/magnitude_spectrum.png')
+    plt.savefig(f'{path}/magnitude_spectrum_{epoch}.png')
+
+
+def plot_grad_flow(named_parameters, path):
+    '''Plots the gradients flowing through different layers in the net during training.
+    Can be used for checking for possible gradient vanishing / exploding problems.
+
+    Source: https://discuss.pytorch.org/t/check-gradient-flow-in-network/15063/10
+
+    Usage: Plug this function in Trainer class after loss.backwards() as
+    "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+    plt.figure('grad_flow', figsize=(18, 10))
+    ave_grads = []
+    max_grads = []
+    layers = []
+    for n, p in named_parameters:
+        if p.requires_grad and ("bias" not in n):
+            if len(n) < 12:
+                layers.append(n)
+            else:
+                layers.append(n[:6] + "..." + n[-6:])
+            ave_grads.append(p.grad.abs().mean().cpu())
+            max_grads.append(p.grad.abs().max().cpu())
+
+    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
+    plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
+    plt.hlines(0, 0, len(ave_grads) + 1, lw=2, color="k")
+    plt.xticks(range(0, len(ave_grads), 1), layers, rotation="vertical")
+    plt.xlim(left=0, right=len(ave_grads))
+    plt.ylim(bottom=-0.001, top=0.05)  # zoom in on the lower gradient regions
+    plt.xlabel("Layers")
+    plt.ylabel("average gradient")
+    plt.title("Gradient flow")
+    plt.grid(True)
+    plt.legend([Line2D([0], [0], color="c", lw=4),
+                Line2D([0], [0], color="b", lw=4),
+                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+    plt.tight_layout()
+    plt.savefig(f'{path}/grad_flow.png')

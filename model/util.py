@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import os
 
@@ -24,10 +25,15 @@ def initialise_folders(tag, overwrite):
             pass
 
 
-def load_dataset(config, mean, std) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
+def load_dataset(config, mean=None, std=None) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
+
     # define transforms
-    transform = transforms.Normalize(mean=mean, std=std)
+    if mean is None or std is None:
+        transform = None
+    else:
+        transform = transforms.Normalize(mean=mean, std=std)
+
     # Load train, test and valid datasets
     train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, "Train",
                                            transform=transform)
@@ -83,3 +89,28 @@ def progress(i, batches, n, num_epochs, timed):
     """
     message = 'batch {} of {}, epoch {} of {}'.format(i, batches, n, num_epochs)
     print(f"Progress: {message}, Time per iter: {timed}")
+
+
+def spectral_distortion_inner(input_spectrum, target_spectrum):
+    numerator = target_spectrum
+    denominator = input_spectrum
+    return torch.mean((20 * torch.log10(numerator / denominator)) ** 2)
+
+
+def spectral_distortion_metric(generated, target):
+    num_panels = generated.size(0)
+    height = generated.size(1)
+    width = generated.size(2)
+    total_positions = num_panels * height * width
+
+    total_all_positions = 0
+    for i in range(num_panels):
+        for j in range(height):
+            for k in range(width):
+                average_over_frequencies = spectral_distortion_inner(generated[i, j, k],
+                                                                     target[i, j, k])
+                # average_over_frequencies = spectral_distortion_inner(generated.detach().cpu()[i, j, k],
+                #                                                      target.detach().cpu()[i, j, k])
+                total_all_positions += torch.sqrt(average_over_frequencies)
+
+    return total_all_positions / total_positions

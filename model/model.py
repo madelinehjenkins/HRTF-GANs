@@ -142,6 +142,8 @@ class Generator(nn.Module):
             CubeSphereConv2D(1024, 128, (3, 3), (1, 1))
         )
 
+        self.classifier = nn.Softplus()
+
         # Initialize neural network weights
         self._initialize_weights()
 
@@ -156,6 +158,8 @@ class Generator(nn.Module):
         out = torch.add(out1, out2)
         out = self.upsampling(out)
         out = self.conv_block3(out)
+        out = self.classifier(out)
+
         return out
 
     def _initialize_weights(self) -> None:

@@ -8,10 +8,9 @@ import torch.optim as optim
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 import time
 
-from plot import plot_panel, plot_losses, plot_magnitude_spectrums
+from plot import plot_losses, plot_magnitude_spectrums, plot_grad_flow
 
 
 def train(config, train_prefetcher, overwrite=True):
@@ -24,11 +23,6 @@ def train(config, train_prefetcher, overwrite=True):
     # Calculate how many batches of data are in each Epoch
     batches = len(train_prefetcher)
 
-    # get list of positive frequencies of HRTF for plotting magnitude spectrum
-    hrir_samplerate = 48000.0
-    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
-    pos_freqs = all_freqs[all_freqs >= 0]
-
     # Assign torch device
     ngpu = config.ngpu
     path = config.path
@@ -40,6 +34,11 @@ def train(config, train_prefetcher, overwrite=True):
 
     # Get train params
     batch_size, beta1, beta2, num_epochs, lr_gen, lr_dis, critic_iters = config.get_train_params()
+
+    # get list of positive frequencies of HRTF for plotting magnitude spectrum
+    hrir_samplerate = 48000.0
+    all_freqs = scipy.fft.fftfreq(256, 1 / hrir_samplerate)
+    pos_freqs = all_freqs[all_freqs >= 0]
 
     # Define Generator network and transfer to CUDA
     netG = Generator().to(device)
@@ -54,19 +53,27 @@ def train(config, train_prefetcher, overwrite=True):
 
     # Define loss functions
     adversarial_criterion = nn.BCEWithLogitsLoss()
-    content_criterion = nn.MSELoss()
+    content_criterion = spectral_distortion_metric
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
         netD.load_state_dict(torch.load(f"{path}/Disc.pt"))
 
     train_losses_G = []
+    train_losses_G_adversarial = []
+    train_losses_G_content = []
     train_losses_D = []
+    train_losses_D_hr = []
+    train_losses_D_sr = []
 
     for epoch in range(num_epochs):
         times = []
-        train_loss_D = 0.
         train_loss_G = 0.
+        train_loss_G_adversarial = 0.
+        train_loss_G_content = 0.
+        train_loss_D = 0.
+        train_loss_D_hr = 0.
+        train_loss_D_sr = 0.
 
         # Initialize the number of data batches to print logs on the terminal
         batch_index = 0
@@ -104,13 +111,15 @@ def train(config, train_prefetcher, overwrite=True):
 
             # train on SR hrtfs
             label.fill_(0.)
-            output = netD(sr.detach()).view(-1)
+            output = netD(sr.detach().clone()).view(-1)
             loss_D_sr = adversarial_criterion(output, label)
             loss_D_sr.backward()
 
             # Compute the discriminator loss
             loss_D = loss_D_hr + loss_D_sr
             train_loss_D += loss_D
+            train_loss_D_hr += loss_D_hr
+            train_loss_D_sr += loss_D_sr
 
             # Update D
             optD.step()
@@ -119,6 +128,7 @@ def train(config, train_prefetcher, overwrite=True):
             if batch_index % int(critic_iters) == 0:
                 # Initialize generator model gradients
                 netG.zero_grad()
+                sr = netG(lr)
                 label.fill_(1.)
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
@@ -128,7 +138,10 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
+                plot_grad_flow(netG.named_parameters(), path)
                 train_loss_G += loss_G
+                train_loss_G_adversarial += adversarial_loss_G
+                train_loss_G_content += content_loss_G
 
                 optG.step()
 
@@ -146,13 +159,7 @@ def train(config, train_prefetcher, overwrite=True):
                     torch.save(netG.state_dict(), f'{path}/Gen.pt')
                     torch.save(netD.state_dict(), f'{path}/Disc.pt')
 
-                    plot_panel(lr, sr, hr, batch_index, epoch, path, ncol=4, freq_index=10)
-
-                    magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
-                    magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-                    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, path)
-                    progress(batch_index, batches, epoch, num_epochs,
-                             timed=np.mean(times))
+                    progress(batch_index, batches, epoch, num_epochs, timed=np.mean(times))
                     times = []
 
             # Preload the next batch of data
@@ -163,9 +170,31 @@ def train(config, train_prefetcher, overwrite=True):
             batch_index += 1
 
         train_losses_D.append(train_loss_D / len(train_prefetcher))
+        train_losses_D_hr.append(train_loss_D_hr / len(train_prefetcher))
+        train_losses_D_sr.append(train_loss_D_sr / len(train_prefetcher))
         train_losses_G.append(train_loss_G / len(train_prefetcher))
+        train_losses_G_adversarial.append(train_loss_G_adversarial / len(train_prefetcher))
+        train_losses_G_content.append(train_loss_G_content / len(train_prefetcher))
         print(f"Average epoch loss, discriminator: {train_losses_D[-1]}, generator: {train_losses_G[-1]}")
+        print(f"Average epoch loss, D_real: {train_losses_D_hr[-1]}, D_fake: {train_losses_D_sr[-1]}")
+        print(f"Average epoch loss, G_adv: {train_losses_G_adversarial[-1]}, train_losses_G_content: {train_losses_G_content[-1]}")
 
-    plot_losses(train_losses_D, train_losses_G, path)
+        # create magnitude spectrum plot every 25 epochs and last epoch
+        if epoch % 25 == 0 or epoch == (num_epochs - 1):
+            magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
+            magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
+            ear_label = "TODO"
+            plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
+                                     ear_label, epoch, path, log_scale_magnitudes=True)
+
+    plot_losses(train_losses_D, train_losses_G,
+                label_1='Discriminator loss', label_2='Generator loss',
+                path=path, filename='loss_curves')
+    plot_losses(train_losses_D_hr, train_losses_D_sr,
+                label_1='Discriminator loss, real', label_2='Discriminator loss, fake',
+                path=path, filename='loss_curves_D')
+    plot_losses(train_losses_G_adversarial, train_losses_G_content,
+                label_1='Generator loss, adversarial', label_2='Generator loss, content',
+                path=path, filename='loss_curves_G')
 
     print("TRAINING FINISHED")
