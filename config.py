@@ -27,6 +27,7 @@ class Config:
         self.hrtf_size = 16
         self.upscale_factor = 4
         self.train_samples_ratio = 0.8
+        self.val_samples_ratio = 0.1
 
         # Training hyperparams
         self.batch_size = 32

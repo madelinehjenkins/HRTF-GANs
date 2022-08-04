@@ -51,7 +51,12 @@ def main(mode, tag, using_hpc):
 
         # TODO: Split some data into test set
         train_size = int(len(set(ds.subject_ids)) * config.train_samples_ratio)
-        train_sample = np.random.choice(ds.subject_ids, train_size)
+        train_sample = np.random.choice(list(set(ds.subject_ids)), train_size, replace=False)
+
+        val_size = int(len(set(ds.subject_ids)) * config.val_samples_ratio)
+        val_test_subject_ids = [s for s in list(set(ds.subject_ids)) if s not in train_sample]
+        val_sample = np.random.choice(val_test_subject_ids, val_size, replace=False)
+
         # collect all train_hrtfs to get mean and sd
         train_hrtfs = torch.empty(size=(2 * train_size, 5, config.hrtf_size, config.hrtf_size, 128))
         j = 0
@@ -65,8 +70,10 @@ def main(mode, tag, using_hpc):
                 projected_dir = "projected_data/train/"
                 train_hrtfs[j] = clean_hrtf
                 j += 1
-            else:
+            elif ds[i]['group'] in val_sample:
                 projected_dir = "projected_data/valid/"
+            else:
+                projected_dir = "projected_data/test/"
 
             if using_hpc:
                 projected_dir = "HRTF-GANs/" + projected_dir
