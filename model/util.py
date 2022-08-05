@@ -37,8 +37,6 @@ def load_dataset(config, mean=None, std=None) -> [CUDAPrefetcher, CUDAPrefetcher
     # Load train, test and valid datasets
     train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, transform)
     valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, transform)
-    # TODO: set up test datasets
-    # test_datasets = TestHRTFDataset(config.test_lr_hrtf_dir, config.test_hr_hrtf_dir)
 
     # Generator all dataloader
     train_dataloader = DataLoader(train_datasets,
@@ -55,25 +53,17 @@ def load_dataset(config, mean=None, std=None) -> [CUDAPrefetcher, CUDAPrefetcher
                                   pin_memory=True,
                                   drop_last=False,
                                   persistent_workers=True)
-    # test_dataloader = DataLoader(test_datasets,
-    #                              batch_size=1,
-    #                              shuffle=False,
-    #                              num_workers=1,
-    #                              pin_memory=True,
-    #                              drop_last=False,
-    #                              persistent_workers=True)
 
     # Place all data on the preprocessing data loader
     if torch.cuda.is_available() and config.ngpu > 0:
         device = torch.device(config.device_name)
         train_prefetcher = CUDAPrefetcher(train_dataloader, device)
         valid_prefetcher = CUDAPrefetcher(valid_dataloader, device)
-        # test_prefetcher = CUDAPrefetcher(test_dataloader, device)
     else:
         train_prefetcher = CPUPrefetcher(train_dataloader)
         valid_prefetcher = CPUPrefetcher(valid_dataloader)
 
-    return train_prefetcher, valid_prefetcher  # , test_prefetcher
+    return train_prefetcher, valid_prefetcher
 
 
 def progress(i, batches, n, num_epochs, timed):
