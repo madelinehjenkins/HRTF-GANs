@@ -49,13 +49,9 @@ def main(mode, tag, using_hpc):
         with open(projection_filename, "rb") as file:
             cube, sphere, sphere_triangles, sphere_coeffs = pickle.load(file)
 
-        # TODO: Split some data into test set
+        # Split data into train and test sets
         train_size = int(len(set(ds.subject_ids)) * config.train_samples_ratio)
         train_sample = np.random.choice(list(set(ds.subject_ids)), train_size, replace=False)
-
-        val_size = int(len(set(ds.subject_ids)) * config.val_samples_ratio)
-        val_test_subject_ids = [s for s in list(set(ds.subject_ids)) if s not in train_sample]
-        val_sample = np.random.choice(val_test_subject_ids, val_size, replace=False)
 
         # collect all train_hrtfs to get mean and sd
         train_hrtfs = torch.empty(size=(2 * train_size, 5, config.hrtf_size, config.hrtf_size, 128))
@@ -70,10 +66,8 @@ def main(mode, tag, using_hpc):
                 projected_dir = "projected_data/train/"
                 train_hrtfs[j] = clean_hrtf
                 j += 1
-            elif ds[i]['group'] in val_sample:
-                projected_dir = "projected_data/valid/"
             else:
-                projected_dir = "projected_data/test/"
+                projected_dir = "projected_data/valid/"
 
             if using_hpc:
                 projected_dir = "HRTF-GANs/" + projected_dir
@@ -99,7 +93,7 @@ def main(mode, tag, using_hpc):
         #     mean, std, min_hrtf, max_hrtf = pickle.load(file)
 
         # Trains the GANs, according to the parameters specified in Config
-        train_prefetcher, valid_prefetcher = load_dataset(config, mean=None, std=None)
+        train_prefetcher, test_prefetcher = load_dataset(config, mean=None, std=None)
         print("Loaded all datasets successfully.")
 
         util.initialise_folders(tag, overwrite=True)

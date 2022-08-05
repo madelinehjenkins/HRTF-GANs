@@ -135,9 +135,11 @@ def train(config, train_prefetcher, overwrite=True):
 
                 content_loss_G = config.content_weight * content_criterion(sr, hr)
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
+
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
+
                 plot_grad_flow(netG.named_parameters(), path)
                 train_loss_G += loss_G
                 train_loss_G_adversarial += adversarial_loss_G
