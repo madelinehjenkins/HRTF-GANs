@@ -117,9 +117,9 @@ def train(config, train_prefetcher, overwrite=True):
 
             # Compute the discriminator loss
             loss_D = loss_D_hr + loss_D_sr
-            train_loss_D += loss_D
-            train_loss_D_hr += loss_D_hr
-            train_loss_D_sr += loss_D_sr
+            train_loss_D += loss_D.item()
+            train_loss_D_hr += loss_D_hr.item()
+            train_loss_D_sr += loss_D_sr.item()
 
             # Update D
             optD.step()
@@ -141,9 +141,9 @@ def train(config, train_prefetcher, overwrite=True):
                 loss_G.backward()
 
                 plot_grad_flow(netG.named_parameters(), path)
-                train_loss_G += loss_G
-                train_loss_G_adversarial += adversarial_loss_G
-                train_loss_G_content += content_loss_G
+                train_loss_G += loss_G.item()
+                train_loss_G_adversarial += adversarial_loss_G.item()
+                train_loss_G_content += content_loss_G.item()
 
                 optG.step()
 

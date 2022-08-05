@@ -313,8 +313,8 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
 def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename):
     """Plot the discriminator and generator loss over time"""
     plt.figure()
-    loss_1 = [x.item() for x in train_losses_1]
-    loss_2 = [x.item() for x in train_losses_2]
+    loss_1 = [x for x in train_losses_1]
+    loss_2 = [x for x in train_losses_2]
     plt.plot(loss_1, label=label_1)
     plt.plot(loss_2, label=label_2)
 
