@@ -82,6 +82,7 @@ def progress(i, batches, n, num_epochs, timed):
 def spectral_distortion_inner(input_spectrum, target_spectrum):
     numerator = target_spectrum
     denominator = input_spectrum
+    print(f"numerator shape: {numerator.shape}")
     return torch.mean((20 * torch.log10(numerator / denominator)) ** 2)
 
 
@@ -89,6 +90,8 @@ def spectral_distortion_metric(generated, target):
     num_panels = generated.size(0)
     height = generated.size(1)
     width = generated.size(2)
+    print(f"num panels: {num_panels}")
+    print(f"height * width: {height} * {width}")
     total_positions = num_panels * height * width
 
     total_all_positions = 0
