@@ -82,26 +82,43 @@ def progress(i, batches, n, num_epochs, timed):
 def spectral_distortion_inner(input_spectrum, target_spectrum):
     numerator = target_spectrum
     denominator = input_spectrum
-    print(f"numerator shape: {numerator.shape}")
     return torch.mean((20 * torch.log10(numerator / denominator)) ** 2)
 
 
-def spectral_distortion_metric(generated, target):
-    num_panels = generated.size(0)
-    height = generated.size(1)
-    width = generated.size(2)
+def spectral_distortion_metric(generated, target, reduction='mean'):
+    """Computes the mean spectral distortion metric for a 5 dimensional tensor (N x C x P x W x H)
+    Where N is the batch size, C is the number of frequency bins, P is the number of panels (usually 5),
+    H is height, and W is width.
+
+    Computes the mean over every HRTF in the batch"""
+    batch_size = generated.size(0)
+    num_panels = generated.size(2)
+    height = generated.size(3)
+    width = generated.size(4)
+    print(f"batch size: {batch_size}")
     print(f"num panels: {num_panels}")
     print(f"height * width: {height} * {width}")
+    print(f"numerator size: {target[0, :, 0, 0, 0]}")
+    print(f"denominator size: {generated[0, :, 0, 0, 0]}")
     total_positions = num_panels * height * width
 
-    total_all_positions = 0
-    for i in range(num_panels):
-        for j in range(height):
-            for k in range(width):
-                average_over_frequencies = spectral_distortion_inner(generated[i, j, k],
-                                                                     target[i, j, k])
-                # average_over_frequencies = spectral_distortion_inner(generated.detach().cpu()[i, j, k],
-                #                                                      target.detach().cpu()[i, j, k])
-                total_all_positions += torch.sqrt(average_over_frequencies)
+    total_sd_metric = 0
+    for b in range(batch_size):
+        total_all_positions = 0
+        for i in range(num_panels):
+            for j in range(height):
+                for k in range(width):
+                    average_over_frequencies = spectral_distortion_inner(generated[b, :, i, j, k],
+                                                                         target[b, :, i, j, k])
+                    total_all_positions += torch.sqrt(average_over_frequencies)
+        sd_metric = total_all_positions / total_positions
+        total_sd_metric += sd_metric
 
-    return total_all_positions / total_positions
+    if reduction == 'mean':
+        output_loss = total_sd_metric / batch_size
+    elif reduction == 'none':
+        output_loss = total_sd_metric
+    else:
+        raise RuntimeError("Please specify a valid method for reduction (either 'mean' or 'none').")
+
+    return output_loss
