@@ -55,6 +55,7 @@ def test(config, val_prefetcher):
                                  non_blocking=True, dtype=torch.float)
         hr = batch_data["hr"].to(device=device, memory_format=torch.contiguous_format,
                                  non_blocking=True, dtype=torch.float)
+        filename = batch_data["filename"]
 
         # Use the generator model to generate fake samples
         with torch.no_grad():
@@ -72,6 +73,7 @@ def test(config, val_prefetcher):
     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
     ear_label = "TODO"
+    print(f'filename from train: {filename}')
     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
                              ear_label, "val", path, log_scale_magnitudes=True)
     # TODO: might be worthwhile to plot for every validation HRTF

@@ -47,7 +47,7 @@ class TrainValidHRTFDataset(Dataset):
         # downsample hrtf
         lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
 
-        return {"lr": lr_hrtf, "hr": hr_hrtf}
+        return {"lr": lr_hrtf, "hr": hr_hrtf, "filename": self.hrtf_file_names[batch_index]}
 
     def __len__(self) -> int:
         return len(self.hrtf_file_names)
