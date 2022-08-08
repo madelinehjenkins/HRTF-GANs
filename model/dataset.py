@@ -32,8 +32,6 @@ class TrainValidHRTFDataset(Dataset):
         with open(self.hrtf_file_names[batch_index], "rb") as file:
             hrtf = pickle.load(file)
 
-        print(f'filename: {self.hrtf_file_names[batch_index]}')
-
         # hrtf processing operations
         if self.transform is not None:
             # If using a transform, treat panels as batch dim such that dims are (panels, channels, X, Y)
