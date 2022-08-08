@@ -63,25 +63,23 @@ def test(config, val_prefetcher):
 
         val_loss += spectral_distortion_metric(sr, hr).item()
 
+        # create magnitude spectrum plot
+        magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
+        magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
+
+        if filename[0][-5:] == 'right':
+            ear_label = 'right'
+        elif filename[0][-4:] == 'left':
+            ear_label = 'left'
+        else:
+            ear_label = 'unknown'
+
+        plot_label = filename[0].split('/')[-1]
+        plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
+                                 ear_label, "validation", plot_label, path, log_scale_magnitudes=True)
+
         # Preload the next batch of data
         batch_data = val_prefetcher.next()
 
     avg_loss = val_loss / len(val_prefetcher)
     print(f"Average validation spectral distortion metric: {avg_loss}")
-
-    # create magnitude spectrum plot
-    magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
-    magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-
-    if filename[0][-5:] == 'right':
-        ear_label = 'right'
-    elif filename[0][-4:] == 'left':
-        ear_label = 'left'
-    else:
-        ear_label = 'unknown'
-
-    plot_label = filename[0].split('/')[-1]
-
-    plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                             ear_label, "validation", plot_label, path, log_scale_magnitudes=True)
-    # TODO: might be worthwhile to plot for every validation HRTF
