@@ -326,7 +326,7 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename
 
 
 def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, epoch, path,
-                             log_scale_magnitudes = True, title="Magnitude spectrum, horizontal plane"):
+                             log_scale_magnitudes=True, title="Magnitude spectrum, horizontal plane"):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
 
     title += " (" + ear + " ear)"
@@ -342,8 +342,8 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
         if log_scale_magnitudes:
-            magnitudes_real_plot = 20*np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
-            magnitudes_interpolated_plot = 20*np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+            magnitudes_real_plot = 20 * np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
+            magnitudes_interpolated_plot = 20 * np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
         else:
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
