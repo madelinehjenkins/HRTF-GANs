@@ -80,6 +80,8 @@ def test(config, val_prefetcher):
     else:
         ear_label = 'unknown'
 
+    plot_label = filename[0].split('/')[-1]
+
     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                             ear_label, "val", path, log_scale_magnitudes=True)
+                             ear_label, plot_label, path, log_scale_magnitudes=True)
     # TODO: might be worthwhile to plot for every validation HRTF
