@@ -202,8 +202,9 @@ def train(config, train_prefetcher, overwrite=True):
             else:
                 ear_label = 'unknown'
 
+            plot_label = filename[i_plot].split('/')[-1] + '_epoch' + epoch
             plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                                     ear_label, epoch, path, log_scale_magnitudes=True)
+                                     ear_label, "training", plot_label, path, log_scale_magnitudes=True)
 
     plot_losses(train_losses_D, train_losses_G,
                 label_1='Discriminator loss', label_2='Generator loss',
