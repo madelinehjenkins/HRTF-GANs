@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import time
 
-from plot import plot_losses, plot_magnitude_spectrums, plot_grad_flow
+from plot import plot_losses, plot_magnitude_spectrums
 
 
 def train(config, train_prefetcher, overwrite=True):
@@ -140,7 +140,6 @@ def train(config, train_prefetcher, overwrite=True):
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
 
-                plot_grad_flow(netG.named_parameters(), path)
                 train_loss_G += loss_G.item()
                 train_loss_G_adversarial += adversarial_loss_G.item()
                 train_loss_G_content += content_loss_G.item()
