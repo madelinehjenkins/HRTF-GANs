@@ -132,4 +132,4 @@ def spectral_distortion_metric_for_plot(generated, target):
 
     print(f"gen shape: {generated.shape}")
     print(f"target shape: {target.shape}")
-    return spectral_distortion_metric(generated, target)
+    return spectral_distortion_metric(generated, target).item()
