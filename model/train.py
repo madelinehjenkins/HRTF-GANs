@@ -140,9 +140,14 @@ def train(config, train_prefetcher, overwrite=True):
                 content_loss_G = config.content_weight * content_criterion(sr, hr)
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
 
+                print(f'Output shape: {output.shape}')
+                print(f'Label shape: {label.shape}')
+                print(f'Loss shape: {adversarial_loss_G.shape}')
+
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G
                 loss_G.backward()
+                print(f'Loss item: {loss_G.item()}')
 
                 train_loss_G += loss_G.item()
                 train_loss_G_adversarial += adversarial_loss_G.item()
