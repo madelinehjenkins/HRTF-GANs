@@ -197,7 +197,7 @@ def train(config, train_prefetcher, overwrite=True):
             else:
                 ear_label = 'unknown'
 
-            plot_label = filename[i_plot].split('/')[-1] + '_epoch' + epoch
+            plot_label = filename[i_plot].split('/')[-1] + '_epoch' + str(epoch)
             plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
                                      ear_label, "training", plot_label, path, log_scale_magnitudes=True)
 
