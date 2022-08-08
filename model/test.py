@@ -72,8 +72,18 @@ def test(config, val_prefetcher):
     # create magnitude spectrum plot
     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-    ear_label = "TODO"
-    print(f'filename from train: {filename}')
+
+    if len(filename) != 1:
+        print("Filename contains multiple values, including:")
+        print(filename)
+
+    if filename[0][-5:] == 'right':
+        ear_label = 'right'
+    elif filename[0][-4:] == 'left':
+        ear_label = 'left'
+    else:
+        ear_label = 'unknown'
+
     plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
                              ear_label, "val", path, log_scale_magnitudes=True)
     # TODO: might be worthwhile to plot for every validation HRTF
