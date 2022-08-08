@@ -141,10 +141,9 @@ def train(config, train_prefetcher, overwrite=True):
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
 
                 print(f'Output shape: {sr.shape}')
-                print(f'Output[0] shape: {sr[0].shape}')
                 print(f'Label shape: {hr.shape}')
-                print(f'Loss shape: {content_loss_G.shape}')
                 print(f'Content Loss: {content_loss_G}')
+                print(f'Adversarial Loss: {adversarial_loss_G}')
 
                 # Calculate the generator total loss value and backprop
                 loss_G = content_loss_G + adversarial_loss_G

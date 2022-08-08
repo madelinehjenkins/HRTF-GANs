@@ -95,11 +95,6 @@ def spectral_distortion_metric(generated, target, reduction='mean'):
     num_panels = generated.size(2)
     height = generated.size(3)
     width = generated.size(4)
-    print(f"batch size: {batch_size}")
-    print(f"num panels: {num_panels}")
-    print(f"height * width: {height} * {width}")
-    print(f"numerator size: {target[0, :, 0, 0, 0]}")
-    print(f"denominator size: {generated[0, :, 0, 0, 0]}")
     total_positions = num_panels * height * width
 
     total_sd_metric = 0
