@@ -96,6 +96,10 @@ def train(config, train_prefetcher, overwrite=True):
             hr = batch_data["hr"].to(device=device, memory_format=torch.contiguous_format,
                                      non_blocking=True, dtype=torch.float)
 
+            # during every 25th epoch and last epoch, save filename for mag spectrum plot
+            if epoch % 25 == 0 or epoch == (num_epochs - 1):
+                filename = batch_data["filename"]
+
             # Discriminator Training
             # Initialize the discriminator model gradients
             netD.zero_grad()
@@ -182,11 +186,20 @@ def train(config, train_prefetcher, overwrite=True):
 
         # create magnitude spectrum plot every 25 epochs and last epoch
         if epoch % 25 == 0 or epoch == (num_epochs - 1):
-            magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
-            magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-            ear_label = "TODO"
+            i_plot = 0
+            magnitudes_real = torch.permute(hr.detach().cpu()[i_plot], (1, 2, 3, 0))
+            magnitudes_interpolated = torch.permute(sr.detach().cpu()[i_plot], (1, 2, 3, 0))
+
+            if filename[i_plot][-5:] == 'right':
+                ear_label = 'right'
+            elif filename[i_plot][-4:] == 'left':
+                ear_label = 'left'
+            else:
+                ear_label = 'unknown'
+
+            plot_label = filename[i_plot].split('/')[-1] + '_epoch' + str(epoch)
             plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                                     ear_label, epoch, path, log_scale_magnitudes=True)
+                                     ear_label, "training", plot_label, path, log_scale_magnitudes=True)
 
     plot_losses(train_losses_D, train_losses_G,
                 label_1='Discriminator loss', label_2='Generator loss',

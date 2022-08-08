@@ -7,6 +7,7 @@ import numpy as np
 
 from config import Config
 from model.train import train
+from model.test import test
 from model.util import load_dataset
 from preprocessing.cubed_sphere import CubedSphere
 from preprocessing.utils import interpolate_fft, generate_euclidean_cube, load_data
@@ -95,6 +96,13 @@ def main(mode, tag, using_hpc):
 
         util.initialise_folders(tag, overwrite=True)
         train(config, train_prefetcher, overwrite=True)
+
+    elif mode == 'test':
+        _, test_prefetcher = load_dataset(config, mean=None, std=None)
+        print("Loaded all datasets successfully.")
+
+        util.initialise_folders(tag, overwrite=True)
+        test(config, test_prefetcher)
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ from matplotlib import patches
 from matplotlib.lines import Line2D
 from matplotlib.ticker import LinearLocator
 
+from model.util import spectral_distortion_metric_for_plot
 from preprocessing.convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian, \
     convert_cube_indices_to_spherical
 from preprocessing.utils import calc_all_interpolated_features, get_feature_for_point
@@ -325,11 +326,13 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename
     plt.savefig(f'{path}/{filename}.png')
 
 
-def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, epoch, path,
-                             log_scale_magnitudes = True, title="Magnitude spectrum, horizontal plane"):
+def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, mode, label, path,
+                             log_scale_magnitudes=True):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
 
-    title += " (" + ear + " ear)"
+    sdm = spectral_distortion_metric_for_plot(magnitudes_interpolated, magnitudes_real)
+    sdm = round(sdm, 5)
+    title = f"Magnitude spectrum, horizontal plane ({ear} ear) \n ({mode} data, spectral distortion metric = {sdm})"
 
     # keys refer to the locations of the subplots, values are the indices in the cubed sphere
     plot_locs = {(0, 0): (1, 0, 8), (0, 1): (0, 8, 8), (0, 2): (0, 0, 8),
@@ -342,8 +345,8 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         azimuth = (spherical_coordinates[1] / np.pi) * 180
         elevation = (spherical_coordinates[0] / np.pi) * 180
         if log_scale_magnitudes:
-            magnitudes_real_plot = 20*np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
-            magnitudes_interpolated_plot = 20*np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+            magnitudes_real_plot = 20 * np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
+            magnitudes_interpolated_plot = 20 * np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
         else:
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
@@ -359,7 +362,7 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
     axs[0, 1].legend(loc=(0, -0.5))
     axs[1, 1].axis('off')
     fig.suptitle(title)
-    plt.savefig(f'{path}/magnitude_spectrum_{epoch}.png')
+    plt.savefig(f'{path}/magnitude_spectrum_{label}.png')
 
 
 def plot_grad_flow(named_parameters, path):
