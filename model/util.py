@@ -130,6 +130,4 @@ def spectral_distortion_metric_for_plot(generated, target):
     generated = torch.unsqueeze(generated, 0)
     target = torch.unsqueeze(target, 0)
 
-    print(f"gen shape: {generated.shape}")
-    print(f"target shape: {target.shape}")
     return spectral_distortion_metric(generated, target).item()
