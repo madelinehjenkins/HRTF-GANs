@@ -330,10 +330,8 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
                              log_scale_magnitudes=True):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
 
-    sdm = spectral_distortion_metric_for_plot(magnitudes_interpolated, magnitudes_interpolated)
-    print(f"sdm: {sdm}")
+    sdm = spectral_distortion_metric_for_plot(magnitudes_interpolated, magnitudes_real)
     sdm = round(sdm, 5)
-    print(f"sdm rounded: {sdm}")
     title = f"Magnitude spectrum, horizontal plane ({ear} ear) \n ({mode} data, spectral distortion metric = {sdm})"
 
     # keys refer to the locations of the subplots, values are the indices in the cubed sphere
