@@ -102,7 +102,7 @@ def main(mode, tag, using_hpc):
         print("Loaded all datasets successfully.")
 
         util.initialise_folders(tag, overwrite=True)
-        test(config, test_prefetcher, overwrite=True)
+        test(config, test_prefetcher)
 
 
 if __name__ == '__main__':
