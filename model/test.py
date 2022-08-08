@@ -73,10 +73,6 @@ def test(config, val_prefetcher):
     magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
     magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
 
-    if len(filename) != 1:
-        print("Filename contains multiple values, including:")
-        print(filename)
-
     if filename[0][-5:] == 'right':
         ear_label = 'right'
     elif filename[0][-4:] == 'left':
