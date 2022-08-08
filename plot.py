@@ -7,6 +7,7 @@ from matplotlib import patches
 from matplotlib.lines import Line2D
 from matplotlib.ticker import LinearLocator
 
+from model.util import spectral_distortion_metric_for_plot
 from preprocessing.convert_coordinates import convert_sphere_to_cartesian, convert_cube_to_cartesian, \
     convert_cube_indices_to_spherical
 from preprocessing.utils import calc_all_interpolated_features, get_feature_for_point
@@ -329,7 +330,8 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
                              log_scale_magnitudes=True):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
 
-    sdm = 0
+    sdm = spectral_distortion_metric_for_plot(magnitudes_interpolated, magnitudes_interpolated)
+    sdm = round(sdm, 5)
     title = f"Magnitude spectrum, horizontal plane ({ear} ear) \n ({mode} data, spectral distortion metric = {sdm})"
 
     # keys refer to the locations of the subplots, values are the indices in the cubed sphere
