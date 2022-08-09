@@ -114,33 +114,33 @@ class Generator(nn.Module):
         # First conv layer.
         self.conv_block1 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(128, 1024, (3, 3), (1, 1)),
+            CubeSphereConv2D(128, 512, (3, 3), (1, 1)),
             nn.PReLU(),
         )
 
         # Features trunk blocks.
         trunk = []
         for _ in range(16):
-            trunk.append(ResidualConvBlock(1024))
+            trunk.append(ResidualConvBlock(512))
         self.trunk = nn.Sequential(*trunk)
 
         # Second conv layer.
         self.conv_block2 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(1024, 1024, (3, 3), (1, 1), bias=False),
-            nn.BatchNorm3d(1024),
+            CubeSphereConv2D(512, 512, (3, 3), (1, 1), bias=False),
+            nn.BatchNorm3d(512),
         )
 
         # Upscale block
         upsampling = []
         for _ in range(2):
-            upsampling.append(UpsampleBlock(1024))
+            upsampling.append(UpsampleBlock(512))
         self.upsampling = nn.Sequential(*upsampling)
 
         # Output layer.
         self.conv_block3 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(1024, 128, (3, 3), (1, 1))
+            CubeSphereConv2D(512, 128, (3, 3), (1, 1))
         )
 
         self.classifier = nn.Softplus()
