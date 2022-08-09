@@ -11,7 +11,7 @@ class Config:
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
-        self.model_path = f'runs/train-baseline'
+        self.model_path = f'runs/train-256'
 
         # data dirs
         self.train_hrtf_dir = 'projected_data/train'
