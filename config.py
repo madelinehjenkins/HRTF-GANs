@@ -25,7 +25,7 @@ class Config:
 
         # Data processing parameters
         self.hrtf_size = 16
-        self.upscale_factor = 8
+        self.upscale_factor = 4
         self.train_samples_ratio = 0.8
 
         # Training hyperparams
