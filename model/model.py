@@ -133,7 +133,7 @@ class Generator(nn.Module):
 
         # Upscale block
         upsampling = []
-        for _ in range(2):
+        for _ in range(3):
             upsampling.append(UpsampleBlock(512))
         self.upsampling = nn.Sequential(*upsampling)
 
