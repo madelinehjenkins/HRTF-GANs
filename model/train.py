@@ -95,6 +95,7 @@ def train(config, train_prefetcher, overwrite=True):
                                      non_blocking=True, dtype=torch.float)
             hr = batch_data["hr"].to(device=device, memory_format=torch.contiguous_format,
                                      non_blocking=True, dtype=torch.float)
+            print(f'lr shape: {lr.shape}')
 
             # during every 25th epoch and last epoch, save filename for mag spectrum plot
             if epoch % 25 == 0 or epoch == (num_epochs - 1):
