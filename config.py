@@ -11,7 +11,7 @@ class Config:
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
-        self.model_path = f'runs/train-baseline'
+        self.model_path = f'runs/train-512'
 
         # data dirs
         self.train_hrtf_dir = 'projected_data/train'
@@ -24,7 +24,6 @@ class Config:
             self.raw_hrtf_dir = Path('/Users/madsjenkins/Imperial/HRTF/Volumes/home/HRTF Datasets')
 
         # Data processing parameters
-        self.pad_width = 2
         self.hrtf_size = 16
         self.upscale_factor = 4
         self.train_samples_ratio = 0.8
