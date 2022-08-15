@@ -318,6 +318,7 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename
     loss_2 = [x for x in train_losses_2]
     plt.plot(loss_1, label=label_1)
     plt.plot(loss_2, label=label_2)
+    plt.ylim(bottom=0)
 
     plt.title("Loss Curves")
     plt.xlabel("Epochs")
