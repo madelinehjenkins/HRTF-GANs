@@ -33,13 +33,13 @@ class Config:
         self.num_workers = 4
         self.num_epochs = 250  # was originally 250
         self.lr_gen = 0.0001
-        self.lr_dis = 0.00001
+        self.lr_dis = 0.000001
         # how often to train the generator
         self.critic_iters = 4
 
         # Loss function weight
-        self.content_weight = 0.01
-        self.adversarial_weight = 0.001
+        self.content_weight = 0.1
+        self.adversarial_weight = 0.01
 
         # betas for Adam optimizer
         self.beta1 = 0.9
