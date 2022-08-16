@@ -11,7 +11,7 @@ class Config:
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
-        self.model_path = f'runs/01-baseline-dec-critic-iters'
+        self.model_path = f'runs/03-decrease-batch-train'
 
         # data dirs
         self.train_hrtf_dir = 'projected_data/train'
@@ -29,13 +29,13 @@ class Config:
         self.train_samples_ratio = 0.8
 
         # Training hyperparams
-        self.batch_size = 32
+        self.batch_size = 16
         self.num_workers = 4
         self.num_epochs = 100  # was originally 250
         self.lr_gen = 0.0001
         self.lr_dis = 0.000001
         # how often to train the generator
-        self.critic_iters = 3
+        self.critic_iters = 4
 
         # Loss function weight
         self.content_weight = 0.1
