@@ -11,7 +11,7 @@ class Config:
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
-        self.model_path = f'runs/train-512'
+        self.model_path = f'runs/train-baseline'
 
         # data dirs
         self.train_hrtf_dir = 'projected_data/train'
@@ -39,7 +39,7 @@ class Config:
 
         # Loss function weight
         self.content_weight = 0.1
-        self.adversarial_weight = 0.01
+        self.adversarial_weight = 0.1
 
         # betas for Adam optimizer
         self.beta1 = 0.9
