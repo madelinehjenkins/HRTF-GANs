@@ -11,7 +11,7 @@ class Config:
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
-        self.model_path = f'runs/01-baseline-inc-critic-iters'
+        self.model_path = f'runs/01-baseline-dec-critic-iters'
 
         # data dirs
         self.train_hrtf_dir = 'projected_data/train'
@@ -35,7 +35,7 @@ class Config:
         self.lr_gen = 0.0001
         self.lr_dis = 0.000001
         # how often to train the generator
-        self.critic_iters = 6
+        self.critic_iters = 3
 
         # Loss function weight
         self.content_weight = 0.1
