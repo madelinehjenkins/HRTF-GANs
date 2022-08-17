@@ -209,13 +209,16 @@ def train(config, train_prefetcher, overwrite=True):
 
     plot_losses(train_losses_D, train_losses_G,
                 label_1='Discriminator loss', label_2='Generator loss',
-                path=path, filename='loss_curves')
+                color_1="#5ec962", color_2="#440154",
+                path=path, filename='loss_curves', title="Loss curves")
     plot_losses(train_losses_D_hr, train_losses_D_sr,
                 label_1='Discriminator loss, real', label_2='Discriminator loss, fake',
-                path=path, filename='loss_curves_D')
+                color_1="#b5de2b", color_2="#1f9e89",
+                path=path, filename='loss_curves_D', title="Discriminator loss curves")
     plot_losses(train_losses_G_adversarial, train_losses_G_content,
                 label_1='Generator loss, adversarial', label_2='Generator loss, content',
-                path=path, filename='loss_curves_G')
+                color_1="#3e4989", color_2="#440154",
+                path=path, filename='loss_curves_G', title="Generator loss curves")
 
     with open(f'{path}/train_losses.pickle', "wb") as file:
         pickle.dump((train_losses_G, train_losses_G_adversarial, train_losses_G_content,

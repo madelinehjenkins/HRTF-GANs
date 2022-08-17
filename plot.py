@@ -311,7 +311,8 @@ def plot_panel(lr, sr, hr, batch_index, epoch, path, ncol, freq_index):
     plt.close(fig)
 
 
-def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename, title="Loss Curves"):
+def plot_losses(train_losses_1, train_losses_2, label_1, label_2, color_1, color_2,
+                path, filename, title="Loss Curves"):
     """Plot the discriminator and generator loss over time"""
     params = {
         'axes.labelsize': 10,
