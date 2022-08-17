@@ -217,7 +217,7 @@ def train(config, train_prefetcher, overwrite=True):
                 path=path, filename='loss_curves_D', title="Discriminator loss curves")
     plot_losses(train_losses_G_adversarial, train_losses_G_content,
                 label_1='Generator loss, adversarial', label_2='Generator loss, content',
-                color_1="#3e4989", color_2="#440154",
+                color_1="#31688e", color_2="#440154",
                 path=path, filename='loss_curves_G', title="Generator loss curves")
 
     with open(f'{path}/train_losses.pickle', "wb") as file:
