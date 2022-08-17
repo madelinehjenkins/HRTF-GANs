@@ -1,3 +1,5 @@
+import pickle
+
 import scipy
 
 from model.util import *
@@ -65,6 +67,8 @@ def train(config, train_prefetcher, overwrite=True):
     train_losses_D = []
     train_losses_D_hr = []
     train_losses_D_sr = []
+
+    train_SD_metric = []
 
     for epoch in range(num_epochs):
         times = []
@@ -137,7 +141,8 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
 
-                content_loss_G = config.content_weight * content_criterion(sr, hr)
+                unweighted_content_loss_G = content_criterion(sr, hr)
+                content_loss_G = config.content_weight * unweighted_content_loss_G
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
 
                 # Calculate the generator total loss value and backprop
@@ -147,6 +152,7 @@ def train(config, train_prefetcher, overwrite=True):
                 train_loss_G += loss_G.item()
                 train_loss_G_adversarial += adversarial_loss_G.item()
                 train_loss_G_content += content_loss_G.item()
+                train_SD_metric.append(unweighted_content_loss_G.item())
 
                 optG.step()
 
@@ -210,5 +216,9 @@ def train(config, train_prefetcher, overwrite=True):
     plot_losses(train_losses_G_adversarial, train_losses_G_content,
                 label_1='Generator loss, adversarial', label_2='Generator loss, content',
                 path=path, filename='loss_curves_G')
+
+    with open(f'{path}/train_losses.pickle', "wb") as file:
+        pickle.dump((train_losses_G, train_losses_G_adversarial, train_losses_G_content,
+                     train_losses_D, train_losses_D_hr, train_losses_D_sr, train_SD_metric), file)
 
     print("TRAINING FINISHED")
