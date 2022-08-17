@@ -329,8 +329,8 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, path, filename
 
     # loss_1 = [x for x in train_losses_1]
     # loss_2 = [x for x in train_losses_2]
-    plt.plot(loss_1, label=label_1, linewidth=2, ls='solid', color="#5ec962")
-    plt.plot(loss_2, label=label_2, linewidth=2, ls='dashed', color="#440154")
+    plt.plot(train_losses_1, label=label_1, linewidth=2, ls='solid', color="#5ec962")
+    plt.plot(train_losses_2, label=label_2, linewidth=2, ls='dashed', color="#440154")
     plt.ylim(bottom=0)
     plt.xlim(left=0)
 
