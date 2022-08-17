@@ -321,7 +321,7 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, color_1, color
         'legend.fontsize': 10,
         'xtick.labelsize': 8,
         'ytick.labelsize': 8,
-        'figure.figsize': [4.5, 4.5]
+        'figure.figsize': [6, 4.5]
     }
     plt.rcParams.update(params)
 
