@@ -330,10 +330,9 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, color_1, color
 
     # loss_1 = [x for x in train_losses_1]
     # loss_2 = [x for x in train_losses_2]
-    plt.plot(train_losses_1, label=label_1, linewidth=2, ls='solid', color=color_1)
-    plt.plot(train_losses_2, label=label_2, linewidth=2, ls='dashed', color=color_2)
+    plt.plot(train_losses_1, label=label_1, linewidth=2, color=color_1)
+    plt.plot(train_losses_2, label=label_2, linewidth=2, color=color_2)
     plt.ylim(bottom=0)
-    plt.xlim(left=0)
 
     plt.title(title)
     plt.xlabel("Epochs")
