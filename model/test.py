@@ -1,5 +1,7 @@
 import os
+import pickle
 
+import numpy as np
 import scipy
 import torch
 
@@ -49,6 +51,7 @@ def test(config, val_prefetcher):
     batch_data = val_prefetcher.next()
 
     val_loss = 0.
+    val_loss_list = []
     while batch_data is not None:
         # Transfer in-memory data to CUDA devices to speed up validation
         lr = batch_data["lr"].to(device=device, memory_format=torch.contiguous_format,
@@ -61,7 +64,9 @@ def test(config, val_prefetcher):
         with torch.no_grad():
             sr = model(lr)
 
-        val_loss += spectral_distortion_metric(sr, hr).item()
+        loss = spectral_distortion_metric(sr, hr).item()
+        val_loss += loss
+        val_loss_list.append(loss)
 
         # create magnitude spectrum plot
         magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
@@ -82,4 +87,9 @@ def test(config, val_prefetcher):
         batch_data = val_prefetcher.next()
 
     avg_loss = val_loss / len(val_prefetcher)
+
+    with open(f'{path}/val_loss.pickle', "wb") as file:
+        pickle.dump(val_loss_list, file)
+
     print(f"Average validation spectral distortion metric: {avg_loss}")
+    print(f"Mean (SD) validation spectral distortion metric: {np.mean(val_loss_list)} ({np.std(val_loss_list)})")
