@@ -111,36 +111,38 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self) -> None:
         super(Generator, self).__init__()
+        self.ngf = 512
+
         # First conv layer.
         self.conv_block1 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(128, 512, (3, 3), (1, 1)),
+            CubeSphereConv2D(128, self.ngf, (3, 3), (1, 1)),
             nn.PReLU(),
         )
 
         # Features trunk blocks.
         trunk = []
-        for _ in range(16):
-            trunk.append(ResidualConvBlock(512))
+        for _ in range(8):
+            trunk.append(ResidualConvBlock(self.ngf))
         self.trunk = nn.Sequential(*trunk)
 
         # Second conv layer.
         self.conv_block2 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(512, 512, (3, 3), (1, 1), bias=False),
-            nn.BatchNorm3d(512),
+            CubeSphereConv2D(self.ngf, self.ngf, (3, 3), (1, 1), bias=False),
+            nn.BatchNorm3d(self.ngf),
         )
 
         # Upscale block
         upsampling = []
         for _ in range(2):
-            upsampling.append(UpsampleBlock(512))
+            upsampling.append(UpsampleBlock(self.ngf))
         self.upsampling = nn.Sequential(*upsampling)
 
         # Output layer.
         self.conv_block3 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(512, 128, (3, 3), (1, 1))
+            CubeSphereConv2D(self.ngf, 128, (3, 3), (1, 1))
         )
 
         self.classifier = nn.Softplus()
