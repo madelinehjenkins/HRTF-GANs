@@ -27,22 +27,26 @@ class TrainValidHRTFDataset(Dataset):
     def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
         # Read a batch of hrtf data
         with open(self.hrtf_file_names[batch_index], "rb") as file:
-            hrtf = pickle.load(file)
+            hrtf, hrir = pickle.load(file)
 
         # hrtf processing operations
         if self.transform is not None:
             # If using a transform, treat panels as batch dim such that dims are (panels, channels, X, Y)
             hr_hrtf = torch.permute(hrtf, (0, 3, 1, 2))
+            hr_hrir = torch.permute(hrir, (0, 3, 1, 2))
             # Then, transform hr_hrtf to normalize and swap panel/channel dims to get channels first
             hr_hrtf = torch.permute(self.transform(hr_hrtf), (1, 0, 2, 3))
+            hr_hrir = torch.permute(self.transform(hr_hrir), (1, 0, 2, 3))
         else:
             # If no transform, go directly to (channels, panels, X, Y)
             hr_hrtf = torch.permute(hrtf, (3, 0, 1, 2))
+            hr_hrir = torch.permute(hrir, (3, 0, 1, 2))
 
         # downsample hrtf
         lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
+        lr_hrir = torch.nn.functional.interpolate(hr_hrir, scale_factor=1 / self.upscale_factor)
 
-        return {"lr": lr_hrtf, "hr": hr_hrtf, "filename": self.hrtf_file_names[batch_index]}
+        return {"lr": lr_hrtf, "hr": hr_hrtf, "lr_hrir": lr_hrir, "filename": self.hrtf_file_names[batch_index]}
 
     def __len__(self) -> int:
         return len(self.hrtf_file_names)
