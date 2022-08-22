@@ -11,17 +11,14 @@ class TrainValidHRTFDataset(Dataset):
     """Define training/valid dataset loading methods.
     Args:
         hrtf_dir (str): Train/Valid dataset address.
-        hrtf_size (int): High resolution hrtf size.
         upscale_factor (int): hrtf up scale factor.
         transform (callable): A function/transform that takes in an HRTF and returns a transformed version.
     """
 
-    def __init__(self, hrtf_dir: str, hrtf_size: int, upscale_factor: int, transform=None) -> None:
+    def __init__(self, hrtf_dir: str, upscale_factor: int, transform=None) -> None:
         super(TrainValidHRTFDataset, self).__init__()
         # Get all hrtf file names in folder
         self.hrtf_file_names = [os.path.join(hrtf_dir, hrtf_file_name) for hrtf_file_name in os.listdir(hrtf_dir)]
-        # Specify the high-resolution hrtf size, with equal length and width
-        self.hrtf_size = hrtf_size
         # How many times the high-resolution hrtf is the low-resolution hrtf
         self.upscale_factor = upscale_factor
         # transform to be applied to the data
