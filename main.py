@@ -60,15 +60,15 @@ def main(mode, tag, using_hpc):
         for i in range(len(ds)):
             if i % 10 == 0:
                 print(f"HRTF {i} out of {len(ds)} ({round(100 * i / len(ds))}%)")
-            clean_hrtf = interpolate_fft(cs, ds[i]['features'], sphere, sphere_triangles, sphere_coeffs, cube,
-                                         config.hrtf_size)
+            clean_hrtf, hrir = interpolate_fft(cs, ds[i]['features'], sphere, sphere_triangles, sphere_coeffs, cube,
+                                               config.hrtf_size)
             # save cleaned hrtfdata
             if ds[i]['group'] in train_sample:
-                projected_dir = "projected_data/train/"
+                projected_dir = "projected_data/train-with-hrir/"
                 train_hrtfs[j] = clean_hrtf
                 j += 1
             else:
-                projected_dir = "projected_data/valid/"
+                projected_dir = "projected_data/valid-with-hrir/"
 
             if using_hpc:
                 projected_dir = "HRTF-GANs/" + projected_dir
@@ -76,7 +76,7 @@ def main(mode, tag, using_hpc):
             subject_id = str(ds[i]['group'])
             side = ds[i]['target']
             with open(projected_dir + "ARI_" + subject_id + side, "wb") as file:
-                pickle.dump(clean_hrtf, file)
+                pickle.dump((clean_hrtf, hrir), file)
 
         # save dataset mean and standard deviation for each channel, across all HRTFs in the training data
         mean = torch.mean(train_hrtfs, [0, 1, 2, 3])

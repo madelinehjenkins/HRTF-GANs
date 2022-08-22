@@ -146,6 +146,7 @@ def interpolate_fft(cs, features, sphere, sphere_triangles, sphere_coeffs, cube,
 
     # create empty list of lists of lists and initialize counter
     magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
+    hrirs = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
     count = 0
 
     for panel, x, y in cube:
@@ -156,10 +157,37 @@ def interpolate_fft(cs, features, sphere, sphere_triangles, sphere_coeffs, cube,
 
         # add to list of lists of lists and increment counter
         magnitudes_raw[i][j][k] = magnitudes[count]
+        hrirs[i][j][k] = interpolated_hrirs[count]
+
         count += 1
 
     # convert list of numpy arrays into a single array, such that converting into tensor is faster
-    return torch.tensor(np.array(magnitudes_raw))
+    return torch.tensor(np.array(magnitudes_raw)), torch.tensor(np.array(hrirs))
+
+
+def list_to_tensor(input_list, cube_coords, edge_len):
+    """put list of  into a tensor
+
+    :param input_list: The list of points that correspond to the cubed sphere, to be converted to a tensor
+    :param cube_coords: A list of locations of the gridded cubed sphere points to be interpolated, given as (panel, x, y)
+    :param edge_len: Edge length of gridded cube
+    """
+    # create empty list of lists of lists and initialize counter
+    coordinates = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
+    count = 0
+
+    for panel, x, y in cube_coords:
+        # based on cube coordinates, get indices for magnitudes list of lists
+        i = panel - 1
+        j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+        k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+
+        # add to list of lists of lists and increment counter
+        coordinates[i][j][k] = input_list[count]
+        count += 1
+
+    # convert list of numpy arrays into a single array, such that converting into tensor is faster
+    return torch.tensor(np.array(coordinates))
 
 
 def remove_itd(hrir, pre_window, length):
