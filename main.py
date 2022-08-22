@@ -10,7 +10,7 @@ from model.train import train
 from model.test import test
 from model.util import load_dataset
 from preprocessing.cubed_sphere import CubedSphere
-from preprocessing.utils import interpolate_fft, generate_euclidean_cube, load_data
+from preprocessing.utils import interpolate_fft, generate_euclidean_cube, load_data, list_to_tensor
 from model import util
 
 PI_4 = np.pi / 4
@@ -77,6 +77,14 @@ def main(mode, tag, using_hpc):
             side = ds[i]['target']
             with open(projected_dir + "ARI_" + subject_id + side, "wb") as file:
                 pickle.dump((clean_hrtf, hrir), file)
+
+        # save sphere coordinates in tensor format
+        sphere_coord_tensor = list_to_tensor(sphere, cube, config.hrtf_size)
+        sphere_coord_filename = "projected_data/ARI_mean_std_min_max"
+        if using_hpc:
+            sphere_coord_filename = "HRTF-GANs/" + sphere_coord_filename
+        with open(sphere_coord_filename, "wb") as file:
+            pickle.dump(sphere_coord_tensor, file)
 
         # save dataset mean and standard deviation for each channel, across all HRTFs in the training data
         mean = torch.mean(train_hrtfs, [0, 1, 2, 3])
