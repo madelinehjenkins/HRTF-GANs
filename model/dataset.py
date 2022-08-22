@@ -23,6 +23,10 @@ class TrainValidHRTFDataset(Dataset):
         self.upscale_factor = upscale_factor
         # transform to be applied to the data
         self.transform = transform
+        # coordinates for sphere
+        sphere_path = os.path.join(hrtf_dir, "..", "sphere_coords.pickle")
+        with open(sphere_path, "rb") as file:
+            self.sphere_coords = pickle.load(file)
 
     def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
         # Read a batch of hrtf data
