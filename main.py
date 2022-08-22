@@ -80,7 +80,7 @@ def main(mode, tag, using_hpc):
 
         # save sphere coordinates in tensor format
         sphere_coord_tensor = list_to_tensor(sphere, cube, config.hrtf_size)
-        sphere_coord_filename = "projected_data/ARI_mean_std_min_max"
+        sphere_coord_filename = "projected_data/sphere_coords.pickle"
         if using_hpc:
             sphere_coord_filename = "HRTF-GANs/" + sphere_coord_filename
         with open(sphere_coord_filename, "wb") as file:
