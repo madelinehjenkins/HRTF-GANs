@@ -92,7 +92,7 @@ class TrainValidHRTFDataset(Dataset):
             hr_hrtf_barycentric = torch.permute(torch.tensor(np.array(magnitudes_raw)), (3, 0, 1, 2))
 
         else:
-            hr_hrtf_barycentric = None
+            hr_hrtf_barycentric = torch.ones(128, 5, 16, 16)
 
         return {"lr": lr_hrtf, "hr": hr_hrtf, "hr_barycentric": hr_hrtf_barycentric,
                 "filename": self.hrtf_file_names[batch_index]}

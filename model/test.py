@@ -58,7 +58,8 @@ def test(config, val_prefetcher):
                                  non_blocking=True, dtype=torch.float)
         hr = batch_data["hr"].to(device=device, memory_format=torch.contiguous_format,
                                  non_blocking=True, dtype=torch.float)
-        hr_barycentric = batch_data["hr_barycentric"]
+        hr_barycentric = batch_data["hr_barycentric"].to(device=device, memory_format=torch.contiguous_format,
+                                                         non_blocking=True, dtype=torch.float)
         filename = batch_data["filename"]
 
         # Use the generator model to generate fake samples
@@ -72,7 +73,7 @@ def test(config, val_prefetcher):
         # create magnitude spectrum plot
         magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
         magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
-        magnitudes_barycentric = torch.permute(hr_barycentric[0], (1, 2, 3, 0))
+        magnitudes_barycentric = torch.permute(hr_barycentric.cpu()[0], (1, 2, 3, 0))
 
         if filename[0][-5:] == 'right':
             ear_label = 'right'
