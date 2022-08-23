@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 
 # based on https://github.com/Lornatang/SRGAN-PyTorch/blob/7292452634137d8f5d4478e44727ec1166a89125/dataset.py
 from preprocessing.barycentric_calcs import get_triangle_vertices, calc_barycentric_coordinates
+from preprocessing.convert_coordinates import convert_sphere_to_cube
+from preprocessing.utils import calc_hrtf
 
 
 class TrainValidHRTFDataset(Dataset):
@@ -69,10 +71,30 @@ class TrainValidHRTFDataset(Dataset):
 
                 hrir_p = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
                 interpolated_hrir.append(hrir_p)
-        else:
-            interpolated_hrir = None
+            interpolated_magnitudes, _ = calc_hrtf(interpolated_hrir)
+            # create empty list of lists of lists and initialize counter
+            edge_len = 16
+            magnitudes_raw = [[[[] for _ in range(edge_len)] for _ in range(edge_len)] for _ in range(5)]
+            count = 0
 
-        return {"lr": lr_hrtf, "hr": hr_hrtf, "lr_hrir": lr_hrir, "hr_hrir": interpolated_hrir,
+            for elevation, azimuth in self.hr_list:
+                panel, x, y = convert_sphere_to_cube(elevation, azimuth)
+                # based on cube coordinates, get indices for magnitudes list of lists
+                PI_4 = np.pi / 4
+                i = panel - 1
+                j = round(edge_len * (x - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+                k = round(edge_len * (y - (PI_4 / edge_len) + PI_4) / (np.pi / 2))
+
+                # add to list of lists of lists and increment counter
+                magnitudes_raw[i][j][k] = interpolated_magnitudes[count]
+
+                count += 1
+            hr_hrtf_barycentric = torch.permute(torch.tensor(np.array(magnitudes_raw)), (3, 0, 1, 2))
+
+        else:
+            hr_hrtf_barycentric = None
+
+        return {"lr": lr_hrtf, "hr": hr_hrtf, "hr_barycentric": hr_hrtf_barycentric,
                 "filename": self.hrtf_file_names[batch_index]}
 
     def __len__(self) -> int:
