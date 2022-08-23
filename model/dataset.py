@@ -15,7 +15,7 @@ class TrainValidHRTFDataset(Dataset):
         transform (callable): A function/transform that takes in an HRTF and returns a transformed version.
     """
 
-    def __init__(self, hrtf_dir: str, upscale_factor: int, transform=None) -> None:
+    def __init__(self, hrtf_dir: str, upscale_factor: int, transform=None, validation=False) -> None:
         super(TrainValidHRTFDataset, self).__init__()
         # Get all hrtf file names in folder
         self.hrtf_file_names = [os.path.join(hrtf_dir, hrtf_file_name) for hrtf_file_name in os.listdir(hrtf_dir)]

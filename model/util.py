@@ -25,7 +25,7 @@ def initialise_folders(tag, overwrite):
             pass
 
 
-def load_dataset(config, mean=None, std=None) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
+def load_dataset(config, mean=None, std=None, validation=False) -> [CUDAPrefetcher, CUDAPrefetcher, CUDAPrefetcher]:
     """Based on https://github.com/Lornatang/SRGAN-PyTorch/blob/main/train_srgan.py"""
 
     # define transforms
@@ -35,8 +35,8 @@ def load_dataset(config, mean=None, std=None) -> [CUDAPrefetcher, CUDAPrefetcher
         transform = transforms.Normalize(mean=mean, std=std)
 
     # Load train, test and valid datasets
-    train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.hrtf_size, config.upscale_factor, transform)
-    valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.hrtf_size, config.upscale_factor, transform)
+    train_datasets = TrainValidHRTFDataset(config.train_hrtf_dir, config.upscale_factor, transform)
+    valid_datasets = TrainValidHRTFDataset(config.valid_hrtf_dir, config.upscale_factor, transform, validation)
 
     # Generator all dataloader
     train_dataloader = DataLoader(train_datasets,

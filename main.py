@@ -106,7 +106,7 @@ def main(mode, tag, using_hpc):
         train(config, train_prefetcher, overwrite=True)
 
     elif mode == 'test':
-        _, test_prefetcher = load_dataset(config, mean=None, std=None)
+        _, test_prefetcher = load_dataset(config, mean=None, std=None, validation=True)
         print("Loaded all datasets successfully.")
 
         util.initialise_folders(tag, overwrite=True)
