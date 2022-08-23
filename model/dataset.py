@@ -1,10 +1,12 @@
 import os
 import pickle
+
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-
 # based on https://github.com/Lornatang/SRGAN-PyTorch/blob/7292452634137d8f5d4478e44727ec1166a89125/dataset.py
+from preprocessing.barycentric_calcs import get_triangle_vertices, calc_barycentric_coordinates
 
 
 class TrainValidHRTFDataset(Dataset):
@@ -24,9 +26,18 @@ class TrainValidHRTFDataset(Dataset):
         # transform to be applied to the data
         self.transform = transform
         # coordinates for sphere
-        sphere_path = os.path.join(hrtf_dir, "..", "sphere_coords.pickle")
-        with open(sphere_path, "rb") as file:
-            self.sphere_coords = pickle.load(file)
+        self.validation = validation
+        if validation:
+            sphere_path = os.path.join(hrtf_dir, "..", "sphere_coords.pickle")
+            with open(sphere_path, "rb") as file:
+                self.hr_sphere = pickle.load(file)
+            self.lr_sphere = torch.permute(
+                torch.nn.functional.interpolate(
+                    torch.permute(self.hr_sphere, (3, 0, 1, 2)),
+                    scale_factor=1 / self.upscale_factor), (1, 2, 3, 0))
+            self.hr_list = [item for panel in self.hr_sphere.tolist() for x in panel for item in x]
+            self.lr_list = [item for panel in self.lr_sphere.tolist() for x in panel for item in x]
+            self.barycentric_triangles, self.barycentric_coeffs = self.get_barycentric_coordinates()
 
     def __getitem__(self, batch_index: int) -> [torch.Tensor, torch.Tensor]:
         # Read a batch of hrtf data
@@ -50,10 +61,46 @@ class TrainValidHRTFDataset(Dataset):
         lr_hrtf = torch.nn.functional.interpolate(hr_hrtf, scale_factor=1 / self.upscale_factor)
         lr_hrir = torch.nn.functional.interpolate(hr_hrir, scale_factor=1 / self.upscale_factor)
 
-        return {"lr": lr_hrtf, "hr": hr_hrtf, "lr_hrir": lr_hrir, "filename": self.hrtf_file_names[batch_index]}
+        if self.validation:
+            interpolated_hrir = []
+            for i, p in enumerate(self.hr_list):
+                coeffs = self.barycentric_coeffs[i]
+                features = self.get_triangle_features(self.barycentric_triangles[i], lr_hrir)
+
+                hrir_p = coeffs["alpha"] * features[0] + coeffs["beta"] * features[1] + coeffs["gamma"] * features[2]
+                interpolated_hrir.append(hrir_p)
+        else:
+            interpolated_hrir = None
+
+        return {"lr": lr_hrtf, "hr": hr_hrtf, "lr_hrir": lr_hrir, "hr_hrir": interpolated_hrir,
+                "filename": self.hrtf_file_names[batch_index]}
 
     def __len__(self) -> int:
         return len(self.hrtf_file_names)
+
+    def get_barycentric_coordinates(self):
+        barycentric_triangles = []
+        barycentric_coeffs = []
+
+        for i in range(5*16*16):
+            hr_loc = self.hr_list[i]
+            triangle_vertices = get_triangle_vertices(elevation=hr_loc[0], azimuth=hr_loc[1],
+                                                      sphere_coords=self.lr_list)
+            coeffs = calc_barycentric_coordinates(elevation=hr_loc[0], azimuth=hr_loc[1],
+                                                  closest_points=triangle_vertices)
+            barycentric_triangles.append(triangle_vertices)
+            barycentric_coeffs.append(coeffs)
+
+        return barycentric_triangles, barycentric_coeffs
+
+    def get_triangle_features(self, triangle_vertices, lr_hrir):
+        lr_hrir_list = [item for panel in torch.permute(lr_hrir, (1, 2, 3, 0)).tolist() for x in panel for item in x]
+        features = []
+        for p in triangle_vertices:
+            index = self.lr_list.index(list(p))
+            feature_p = lr_hrir_list[index]
+            features.append(np.array(feature_p))
+        return features
 
 
 class CPUPrefetcher:
