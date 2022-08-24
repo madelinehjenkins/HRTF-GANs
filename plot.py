@@ -367,13 +367,15 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
         if log_scale_magnitudes:
             magnitudes_real_plot = 20 * np.log10(magnitudes_real[indices[0]][indices[1]][indices[2]])
             magnitudes_interpolated_plot = 20 * np.log10(magnitudes_interpolated[indices[0]][indices[1]][indices[2]])
+            magnitudes_barycentric_plot = 20 * np.log10(magnitudes_barycentric[indices[0]][indices[1]][indices[2]])
         else:
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
+            magnitudes_barycentric_plot = magnitudes_barycentric[indices[0]][indices[1]][indices[2]]
 
         axs[row, col].plot(frequencies, magnitudes_real_plot, alpha=0.7, color="#440154", label="Real HRTF")
         axs[row, col].plot(frequencies, magnitudes_interpolated_plot, alpha=0.8, color="#31688e", label="GAN interpolated")
-        axs[row, col].plot(frequencies, magnitudes_barycentric, alpha=0.8, color="#35b779", label="Barycentric interpolated")
+        axs[row, col].plot(frequencies, magnitudes_barycentric_plot, alpha=0.8, color="#35b779", label="Barycentric interpolated")
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')
