@@ -343,13 +343,16 @@ def plot_losses(train_losses_1, train_losses_2, label_1, label_2, color_1, color
     plt.savefig(f'{path}/{filename}.png')
 
 
-def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, ear, mode, label, path,
-                             log_scale_magnitudes=True):
+def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolated, magnitudes_barycentric,
+                             ear, label, path, log_scale_magnitudes=True):
     fig, axs = plt.subplots(3, 3, sharex='all', sharey='all', figsize=(9, 9))
 
     sdm = spectral_distortion_metric_for_plot(magnitudes_interpolated, magnitudes_real)
-    sdm = round(sdm, 5)
-    title = f"Magnitude spectrum, horizontal plane ({ear} ear) \n ({mode} data, spectral distortion metric = {sdm})"
+    sdm = round(sdm, 3)
+
+    sdm_bary = spectral_distortion_metric_for_plot(magnitudes_barycentric, magnitudes_real)
+    sdm_bary = round(sdm_bary, 3)
+    title = f"Magnitude spectrum, horizontal plane ({ear} ear) \n (SD metric GAN = {sdm}, SD metric barycentric = {sdm_bary})"
 
     # keys refer to the locations of the subplots, values are the indices in the cubed sphere
     plot_locs = {(0, 0): (1, 0, 8), (0, 1): (0, 8, 8), (0, 2): (0, 0, 8),
@@ -368,8 +371,9 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
 
-        axs[row, col].plot(frequencies, magnitudes_real_plot, alpha=0.7, label="Real HRTF")
-        axs[row, col].plot(frequencies, magnitudes_interpolated_plot, alpha=0.7, label="GAN interpolated HRTF")
+        axs[row, col].plot(frequencies, magnitudes_real_plot, alpha=0.7, color="#440154", label="Real HRTF")
+        axs[row, col].plot(frequencies, magnitudes_interpolated_plot, alpha=0.8, color="#31688e", label="GAN interpolated")
+        axs[row, col].plot(frequencies, magnitudes_barycentric, alpha=0.8, color="#35b779", label="Barycentric interpolated")
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')

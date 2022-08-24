@@ -51,7 +51,9 @@ def test(config, val_prefetcher):
     batch_data = val_prefetcher.next()
 
     val_loss = 0.
+    bary_loss = 0.
     val_loss_list = []
+    bary_loss_list = []
     while batch_data is not None:
         # Transfer in-memory data to CUDA devices to speed up validation
         lr = batch_data["lr"].to(device=device, memory_format=torch.contiguous_format,
@@ -70,6 +72,10 @@ def test(config, val_prefetcher):
         val_loss += loss
         val_loss_list.append(loss)
 
+        b_loss = spectral_distortion_metric(hr_barycentric, hr).item()
+        bary_loss += b_loss
+        bary_loss_list.append(b_loss)
+
         # create magnitude spectrum plot
         magnitudes_real = torch.permute(hr.detach().cpu()[0], (1, 2, 3, 0))
         magnitudes_interpolated = torch.permute(sr.detach().cpu()[0], (1, 2, 3, 0))
@@ -83,11 +89,8 @@ def test(config, val_prefetcher):
             ear_label = 'unknown'
 
         plot_label = filename[0].split('/')[-1]
-        plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                                 ear_label, "validation", plot_label, path, log_scale_magnitudes=True)
-        plot_label += "_bary"
-        plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_barycentric,
-                                 ear_label, "validation", plot_label, path, log_scale_magnitudes=True)
+        plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated, magnitudes_barycentric,
+                                 ear_label, plot_label, path, log_scale_magnitudes=True)
 
         # Preload the next batch of data
         batch_data = val_prefetcher.next()
@@ -96,6 +99,8 @@ def test(config, val_prefetcher):
 
     with open(f'{path}/val_loss.pickle', "wb") as file:
         pickle.dump(val_loss_list, file)
+    with open(f'{path}/bary_loss.pickle', "wb") as file:
+        pickle.dump(bary_loss_list, file)
 
-    print(f"Average validation spectral distortion metric: {avg_loss}")
     print(f"Mean (SD) validation spectral distortion metric: {np.mean(val_loss_list)} ({np.std(val_loss_list)})")
+    print(f"Mean (SD) barycentric spectral distortion metric: {np.mean(bary_loss_list)} ({np.std(bary_loss_list)})")
