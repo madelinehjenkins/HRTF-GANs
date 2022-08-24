@@ -368,8 +368,8 @@ def plot_magnitude_spectrums(frequencies, magnitudes_real, magnitudes_interpolat
             magnitudes_real_plot = magnitudes_real[indices[0]][indices[1]][indices[2]]
             magnitudes_interpolated_plot = magnitudes_interpolated[indices[0]][indices[1]][indices[2]]
 
-        axs[row, col].plot(frequencies, magnitudes_real_plot, label="Real HRTF")
-        axs[row, col].plot(frequencies, magnitudes_interpolated_plot, label="GAN interpolated HRTF")
+        axs[row, col].plot(frequencies, magnitudes_real_plot, alpha=0.7, label="Real HRTF")
+        axs[row, col].plot(frequencies, magnitudes_interpolated_plot, alpha=0.7, label="GAN interpolated HRTF")
 
         axs[row, col].set(title=f"(az={round(azimuth)}\u00B0, el={round(elevation)}\u00B0)",
                           xlabel='Frequency in Hz', ylabel='Amplitude in dB')

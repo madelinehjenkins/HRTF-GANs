@@ -31,6 +31,9 @@ def calc_spherical_excess(elevation1, azimuth1, elevation2, azimuth2, elevation3
              np.tan(0.5 * (semiperimeter - dist12)) *
              np.tan(0.5 * (semiperimeter - dist13)) *
              np.tan(0.5 * (semiperimeter - dist23)))
+    # correct for rounding errors
+    if -1e-15 < inner < 0:
+        inner = 0
     excess = 4 * np.arctan(np.sqrt(inner))
     return excess
 

@@ -11,11 +11,11 @@ class Config:
     def __init__(self, tag, using_hpc):
         self.tag = tag
         self.path = f'runs/{self.tag}'
-        self.model_path = f'runs/06-increase-LRg-train'
+        self.model_path = f'runs/13-hypertable-LR7-train'
 
         # data dirs
-        self.train_hrtf_dir = 'projected_data/train'
-        self.valid_hrtf_dir = 'projected_data/valid'
+        self.train_hrtf_dir = 'projected_data/train-with-hrir'
+        self.valid_hrtf_dir = 'projected_data/valid-with-hrir'
         if using_hpc:
             self.train_hrtf_dir = "HRTF-GANs/" + self.train_hrtf_dir
             self.valid_hrtf_dir = "HRTF-GANs/" + self.valid_hrtf_dir
