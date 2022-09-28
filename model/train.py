@@ -55,7 +55,7 @@ def train(config, train_prefetcher, overwrite=True):
 
     # Define loss functions
     adversarial_criterion = nn.BCEWithLogitsLoss()
-    content_criterion = spectral_distortion_metric
+    sd_weight = 0.5
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
@@ -141,7 +141,7 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
 
-                unweighted_content_loss_G = content_criterion(sr, hr)
+                unweighted_content_loss_G = sd_weight*spectral_distortion_metric(sr, hr) + ILD_metric(sr, hr)
                 content_loss_G = config.content_weight * unweighted_content_loss_G
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
 
