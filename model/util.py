@@ -131,3 +131,55 @@ def spectral_distortion_metric_for_plot(generated, target):
     target = torch.unsqueeze(target, 0)
 
     return spectral_distortion_metric(generated, target).item()
+
+
+def ILD_metric_inner(input_spectrum, target_spectrum):
+    input_left = input_spectrum[:128]
+    input_right = input_spectrum[128:]
+    target_left = target_spectrum[:128]
+    target_right = target_spectrum[128:]
+    input_ILD = torch.mean((20 * torch.log10(input_left / input_right)))
+    target_ILD = torch.mean((20 * torch.log10(target_left / target_right)))
+    return torch.abs(input_ILD - target_ILD)
+
+
+def ILD_metric(generated, target, reduction="mean"):
+    batch_size = generated.size(0)
+    num_panels = generated.size(2)
+    height = generated.size(3)
+    width = generated.size(4)
+    total_positions = num_panels * height * width
+
+    total_ILD_metric = 0
+
+    for b in range(batch_size):
+        total_all_positions = 0
+        for i in range(num_panels):
+            for j in range(height):
+                for k in range(width):
+                    average_over_frequencies = ILD_metric_inner(generated[b, :, i, j, k], target[b, :, i, j, k])
+                    total_all_positions += average_over_frequencies
+        ILD_metric_batch = total_all_positions / total_positions
+        total_ILD_metric += ILD_metric_batch
+    if reduction == 'mean':
+        output_loss = total_ILD_metric / batch_size
+    elif reduction == 'sum':
+        output_loss = total_ILD_metric
+    else:
+        raise RuntimeError("Please specify a valid method for reduction (either 'mean' or 'sum').")
+
+    return output_loss
+
+
+def ILD_metric_for_plot(generated, target):
+    """Computes the ILD metric for a 4 dimensional tensor (P x W x H x C)
+    Where P is the number of panels (usually 5), H is height, W is width, and C is the number of frequency bins.
+
+    Wrapper for ILD_metric"""
+    generated = torch.permute(generated, (3, 0, 1, 2))
+    target = torch.permute(target, (3, 0, 1, 2))
+
+    generated = torch.unsqueeze(generated, 0)
+    target = torch.unsqueeze(target, 0)
+
+    return ILD_metric(generated, target).item()
