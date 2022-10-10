@@ -204,16 +204,9 @@ def train(config, train_prefetcher, overwrite=True):
             magnitudes_real = torch.permute(hr.detach().cpu()[i_plot], (1, 2, 3, 0))
             magnitudes_interpolated = torch.permute(sr.detach().cpu()[i_plot], (1, 2, 3, 0))
 
-            if filename[i_plot][-5:] == 'right':
-                ear_label = 'right'
-            elif filename[i_plot][-4:] == 'left':
-                ear_label = 'left'
-            else:
-                ear_label = 'unknown'
-
             plot_label = filename[i_plot].split('/')[-1] + '_epoch' + str(epoch)
-            plot_magnitude_spectrums(pos_freqs, magnitudes_real, magnitudes_interpolated,
-                                     ear_label, "training", plot_label, path, log_scale_magnitudes=True)
+            plot_magnitude_spectrums(pos_freqs, magnitudes_real[:128], magnitudes_interpolated[:128],
+                                     "left", "training", plot_label, path, log_scale_magnitudes=True)
 
     plot_losses(train_losses_D, train_losses_G,
                 label_1='Discriminator loss', label_2='Generator loss',
