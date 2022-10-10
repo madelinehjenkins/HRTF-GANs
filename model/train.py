@@ -55,7 +55,15 @@ def train(config, train_prefetcher, overwrite=True):
 
     # Define loss functions
     adversarial_criterion = nn.BCEWithLogitsLoss()
-    sd_weight = 0.5
+    content_criterion = sd_ild_loss
+
+    # mean and std for ILD and SD, which are used for normalization
+    # computed based on average ILD and SD for training data, when comparing each individual
+    # to every other individual in the training data
+    sd_mean = 7.387559253346883
+    sd_std = 0.28285390718000014
+    ild_mean = 3.6508303231127868
+    ild_std = 0.2742153108370458
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
@@ -141,7 +149,7 @@ def train(config, train_prefetcher, overwrite=True):
                 # Calculate adversarial loss
                 output = netD(sr).view(-1)
 
-                unweighted_content_loss_G = sd_weight*spectral_distortion_metric(sr, hr) + ILD_metric(sr, hr)
+                unweighted_content_loss_G = content_criterion(sr, hr, sd_mean, sd_std, ild_mean, ild_std)
                 content_loss_G = config.content_weight * unweighted_content_loss_G
                 adversarial_loss_G = config.adversarial_weight * adversarial_criterion(output, label)
 

@@ -183,3 +183,24 @@ def ILD_metric_for_plot(generated, target):
     target = torch.unsqueeze(target, 0)
 
     return ILD_metric(generated, target).item()
+
+
+def sd_ild_loss(generated, target, sd_mean, sd_std, ild_mean, ild_std):
+    """Computes the mean sd/ild loss for a 5 dimensional tensor (N x C x P x W x H)
+    Where N is the batch size, C is the number of frequency bins, P is the number of panels (usually 5),
+    H is height, and W is width.
+
+    Computes the mean over every HRTF in the batch"""
+
+    # calculate SD and ILD metrics
+    sd_metric = spectral_distortion_metric(generated, target)
+    ild_metric = ILD_metric(generated, target)
+
+    # normalize SD and ILD based on means/standard deviations passed to the function
+    sd_norm = torch.div(torch.sub(sd_metric, sd_mean), sd_std)
+    ild_norm = torch.div(torch.sub(ild_metric, ild_mean), ild_std)
+
+    # add normalized metrics together
+    output = torch.add(sd_norm, ild_norm)
+
+    return output
