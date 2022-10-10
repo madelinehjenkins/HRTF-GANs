@@ -61,9 +61,9 @@ def train(config, train_prefetcher, overwrite=True):
     # computed based on average ILD and SD for training data, when comparing each individual
     # to every other individual in the training data
     sd_mean = 7.387559253346883
-    sd_std = 0.28285390718000014
+    sd_std = 0.577364154400081
     ild_mean = 3.6508303231127868
-    ild_std = 0.2742153108370458
+    ild_std = 0.5261339271318863
 
     if not overwrite:
         netG.load_state_dict(torch.load(f"{path}/Gen.pt"))
