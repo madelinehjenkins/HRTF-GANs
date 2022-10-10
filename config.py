@@ -14,8 +14,8 @@ class Config:
         self.model_path = f'runs/06-increase-LRg-train'
 
         # data dirs
-        self.train_hrtf_dir = 'projected_data/train'
-        self.valid_hrtf_dir = 'projected_data/valid'
+        self.train_hrtf_dir = 'projected_data/train-merge'
+        self.valid_hrtf_dir = 'projected_data/valid-merge'
         if using_hpc:
             self.train_hrtf_dir = "HRTF-GANs/" + self.train_hrtf_dir
             self.valid_hrtf_dir = "HRTF-GANs/" + self.valid_hrtf_dir
