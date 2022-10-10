@@ -57,7 +57,7 @@ class Discriminator(nn.Module):
         self.features = nn.Sequential(
             # input size. (128) x 5 x 16 x 16
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(128, 64, (3, 3), (1, 1), bias=True),
+            CubeSphereConv2D(256, 64, (3, 3), (1, 1), bias=True),
             nn.LeakyReLU(0.2, True),
             # state size. (64) x 5 x 16 x 16
             CubeSpherePadding2D(1),
@@ -116,7 +116,7 @@ class Generator(nn.Module):
         # First conv layer.
         self.conv_block1 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(128, self.ngf, (3, 3), (1, 1)),
+            CubeSphereConv2D(256, self.ngf, (3, 3), (1, 1)),
             nn.PReLU(),
         )
 
@@ -142,7 +142,7 @@ class Generator(nn.Module):
         # Output layer.
         self.conv_block3 = nn.Sequential(
             CubeSpherePadding2D(1),
-            CubeSphereConv2D(self.ngf, 128, (3, 3), (1, 1))
+            CubeSphereConv2D(self.ngf, 256, (3, 3), (1, 1))
         )
 
         self.classifier = nn.Softplus()
