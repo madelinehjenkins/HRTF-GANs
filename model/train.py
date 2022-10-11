@@ -205,7 +205,7 @@ def train(config, train_prefetcher, overwrite=True):
             magnitudes_interpolated = torch.permute(sr.detach().cpu()[i_plot], (1, 2, 3, 0))
 
             plot_label = filename[i_plot].split('/')[-1] + '_epoch' + str(epoch)
-            plot_magnitude_spectrums(pos_freqs, magnitudes_real[:128], magnitudes_interpolated[:128],
+            plot_magnitude_spectrums(pos_freqs, magnitudes_real[:, :, :, :128], magnitudes_interpolated[:, :, :, :128],
                                      "left", "training", plot_label, path, log_scale_magnitudes=True)
 
     plot_losses(train_losses_D, train_losses_G,
