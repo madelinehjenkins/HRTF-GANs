@@ -201,6 +201,12 @@ def sd_ild_loss(generated, target, sd_mean, sd_std, ild_mean, ild_std):
     ild_norm = torch.div(torch.sub(ild_metric, ild_mean), ild_std)
 
     # add normalized metrics together
-    output = torch.add(sd_norm, ild_norm)
+    sum_norms = torch.add(sd_norm, ild_norm)
+
+    # un-normalize
+    sum_std = (sd_std ** 2 + ild_std ** 2) ** 0.5
+    sum_mean = sd_mean + ild_mean
+
+    output = torch.add(torch.mul(sum_norms, sum_std), sum_mean)
 
     return output
